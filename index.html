@@ -229,8 +229,46 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
     <input class="note-inp" id="feedNote" placeholder="Not ekle..." maxlength="100">
     <button class="stop-btn" id="stopBtn" onclick="stopSession()">✅ Emzirmeyi Bitir</button>
   </div>
+  <!-- MANUEL GİRİŞ -->
+  <div class="card" id="manualCard" style="display:none;">
+    <div class="clabel">Manuel Kayıt Ekle</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Başlangıç</div>
+        <input type="time" id="manualStart" class="winp" style="width:100%;padding:8px 10px;font-size:0.95rem;" oninput="updateManualDuration()">
+      </div>
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Bitiş</div>
+        <input type="time" id="manualEnd" class="winp" style="width:100%;padding:8px 10px;font-size:0.95rem;" oninput="updateManualDuration()">
+      </div>
+    </div>
+    <!-- SÜRE GÖSTERGE -->
+    <div id="manualDuration" style="display:none;text-align:center;background:linear-gradient(135deg,var(--rose),var(--lavender));border-radius:12px;padding:10px;margin-bottom:12px;color:white;">
+      <div style="font-size:0.72rem;opacity:0.85;margin-bottom:2px;">Emzirme Süresi</div>
+      <div id="manualDurationVal" style="font-size:2rem;font-weight:800;line-height:1;">—</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Başlayan taraf</div>
+        <select id="manualSide" class="winp" style="width:100%;padding:8px 10px;font-size:0.9rem;">
+          <option value="sol">👈 Sol</option>
+          <option value="sag">👉 Sağ</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Not</div>
+        <input type="text" id="manualNote" class="winp" style="width:100%;padding:8px 10px;font-size:0.9rem;" placeholder="İsteğe bağlı...">
+      </div>
+    </div>
+    <button onclick="saveManual()" style="width:100%;border:none;border-radius:12px;padding:12px;background:linear-gradient(135deg,var(--rose),var(--rose-dark));color:white;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.95rem;cursor:pointer;">💾 Kaydet</button>
+    <div id="manualMsg" style="text-align:center;font-size:0.8rem;margin-top:8px;font-weight:700;"></div>
+  </div>
+
   <div class="card">
-    <div class="clabel">Son Emzirmeler</div>
+    <div class="clabel" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Son Emzirmeler</span>
+      <button onclick="toggleManual()" id="manualToggleBtn" style="border:none;background:var(--rose);color:white;border-radius:10px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer;">+ Manuel Ekle</button>
+    </div>
     <div id="feedHistory"><div class="history-empty">Henüz kayıt yok 🌸</div></div>
     <button class="clear-btn" onclick="clearFeed()">Geçmişi temizle</button>
   </div>
@@ -473,7 +511,8 @@ function triggerAlarm(nextSide, lastTs) {
 }
 
 function dismissAlarm() {
-  document.getElementById('alarmOverlay').style.display = 'none';
+  const overlay = document.getElementById('alarmOverlay');
+  overlay.style.display = 'none';
   scheduleAlarm();
 }
 
@@ -671,6 +710,84 @@ function renderFeedHistory(){
     return `<div class="hi"><div class="hbadge ${e.startSide==='sol'?'sol':'sag'}">${icon}</div><div class="hinfo"><div class="hside">${lbl}</div><div class="htime">${ts} · ${detail}</div>${transfer}${e.note?`<div class="hnote">📝 ${e.note}</div>`:''}</div><div class="hdur">${fmt(e.totalSecs)}</div></div>`;
   }).join('');
 }
+function updateManualDuration() {
+  const startVal = document.getElementById('manualStart').value;
+  const endVal = document.getElementById('manualEnd').value;
+  const durDiv = document.getElementById('manualDuration');
+  const durVal = document.getElementById('manualDurationVal');
+  if (!startVal || !endVal) { durDiv.style.display = 'none'; return; }
+  const [sh,sm] = startVal.split(':').map(Number);
+  const [eh,em] = endVal.split(':').map(Number);
+  let diff = (eh*60+em) - (sh*60+sm);
+  if (diff <= 0) diff += 24*60; // gece yarısı geçişi
+  const h = Math.floor(diff/60);
+  const m = diff % 60;
+  durVal.textContent = h > 0 ? `${h}s ${pad(m)}dk` : `${m} dakika`;
+  durDiv.style.display = 'block';
+}
+
+function toggleManual() {
+  const card = document.getElementById('manualCard');
+  const btn = document.getElementById('manualToggleBtn');
+  const visible = card.style.display !== 'none';
+  card.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? '+ Manuel Ekle' : '✕ Kapat';
+  if (!visible) {
+    // Şu anki saati başlangıç olarak ayarla
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('manualStart').value = `${hh}:${mm}`;
+    document.getElementById('manualEnd').value = `${hh}:${mm}`;
+    document.getElementById('manualMsg').textContent = '';
+  }
+}
+
+function saveManual() {
+  const startVal = document.getElementById('manualStart').value;
+  const endVal = document.getElementById('manualEnd').value;
+  const side = document.getElementById('manualSide').value;
+  const note = document.getElementById('manualNote').value.trim();
+  const msg = document.getElementById('manualMsg');
+
+  if (!startVal || !endVal) { msg.textContent = '❌ Saat girin'; msg.style.color = 'var(--rose-dark)'; return; }
+
+  const today = new Date();
+  const [sh, sm] = startVal.split(':').map(Number);
+  const [eh, em] = endVal.split(':').map(Number);
+
+  let startTs = new Date(today.getFullYear(), today.getMonth(), today.getDate(), sh, sm, 0).getTime();
+  let endTs   = new Date(today.getFullYear(), today.getMonth(), today.getDate(), eh, em, 0).getTime();
+
+  // Gece yarısı geçişi (örn. 23:50 → 00:10)
+  if (endTs <= startTs) endTs += 86400000;
+
+  const totalSecs = Math.floor((endTs - startTs) / 1000);
+  if (totalSecs <= 0) { msg.textContent = '❌ Bitiş başlangıçtan önce olamaz'; msg.style.color = 'var(--rose-dark)'; return; }
+
+  const entry = {
+    timestamp: endTs,
+    startSide: side,
+    leftSecs: side === 'sol' ? totalSecs : 0,
+    rightSecs: side === 'sag' ? totalSecs : 0,
+    transferSecs: 0,
+    totalSecs,
+    note,
+    manual: true
+  };
+
+  feedH.unshift(entry);
+  feedH.sort((a,b) => b.timestamp - a.timestamp);
+  if (feedH.length > 100) feedH = feedH.slice(0,100);
+  sv('bb_feed', feedH);
+
+  msg.textContent = '✅ Kaydedildi!';
+  msg.style.color = 'var(--green-dark)';
+  document.getElementById('manualNote').value = '';
+  updateCountdown(); renderFeedHistory(); scheduleAlarm();
+  setTimeout(() => toggleManual(), 1000);
+}
+
 function clearFeed(){if(!confirm('Emzirme geçmişi silinsin mi?'))return;feedH=[];sv('bb_feed',feedH);renderFeedHistory();updateCountdown();}
 
 // ── DIAPER ──
