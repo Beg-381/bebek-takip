@@ -153,6 +153,9 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 .storage-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.82rem;}
 .storage-row:last-child{border-bottom:none;}
 
+.interval-btn{border:2px solid var(--border);background:var(--bg);color:var(--text-light);border-radius:12px;padding:10px 6px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s;}
+.interval-btn.active{border-color:var(--rose-dark);background:var(--rose-dark);color:white;}
+@keyframes pulse-alarm{0%{transform:scale(1)}100%{transform:scale(1.2)}}
 .diaper-last{text-align:center;font-size:0.82rem;color:var(--text-light);margin-bottom:14px;}
 .diaper-cd{font-size:2rem;font-weight:800;color:var(--rose-dark);text-align:center;margin-bottom:4px;}
 .btn-hint{text-align:center;font-size:0.68rem;color:var(--text-light);margin-bottom:10px;}
@@ -176,8 +179,22 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 
 <!-- EMZİRME -->
 <div class="page active" id="page-emzirme">
-  <div class="notif-banner" id="notifBanner" onclick="requestNotif()">
-    🔔 <span id="notifText">Bildirim izni için tıklayın</span>
+  <!-- ARALIK SEÇİCİ -->
+  <div class="card" style="padding:14px 18px;margin-bottom:14px;">
+    <div class="clabel">Hatırlatma Aralığı</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <button class="interval-btn active" onclick="setInterval_(1.5)" id="iv1">1.5 Saat</button>
+      <button class="interval-btn" onclick="setInterval_(2)" id="iv2">2 Saat</button>
+      <button class="interval-btn" onclick="setInterval_(3)" id="iv3">3 Saat</button>
+    </div>
+  </div>
+  <!-- ALARM OVERLAY -->
+  <div id="alarmOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(224,112,144,0.97);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+    <div style="font-size:5rem;animation:pulse-alarm 0.8s infinite alternate;">🤱</div>
+    <div style="color:white;font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;margin:16px 0 8px;">Emzirme Vakti!</div>
+    <div style="color:rgba(255,255,255,0.9);font-size:1.1rem;margin-bottom:8px;" id="alarmSideText">Sıradaki taraf hazır</div>
+    <div style="color:rgba(255,255,255,0.8);font-size:0.9rem;margin-bottom:30px;" id="alarmTimeText"></div>
+    <button onclick="dismissAlarm()" style="border:none;background:white;color:#e07090;border-radius:20px;padding:16px 40px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1.1rem;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.2);">✓ Tamam, Başlıyorum</button>
   </div>
   <div class="next-card">
     <div class="nc-label">Sonraki emzirme</div>
@@ -385,91 +402,84 @@ function showTab(name){
   if(name==='yedek')renderStorageInfo();
 }
 
-// ── NOTIF + PUSH ──
-const VAPID_PUBLIC = 'BMzIDLNBbAaYdWZMD3u4FwJ3Kq29vkWxkRvsELBBmQ-Po6oZQKOS0eLAK7S_2taR012716tm-n41-3grbLreVvc';
-let notifGranted=false, pushSubscription=null, swRegistration=null;
+// ── ARALIK & ALARM ──
+let alarmInterval = parseFloat(localStorage.getItem('bb_interval') || '2');
+let alarmTimeout = null;
+let alarmAudio = null;
 
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-  return outputArray;
+function setInterval_(hours) {
+  alarmInterval = hours;
+  localStorage.setItem('bb_interval', hours);
+  document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+  const map = {1.5:'iv1', 2:'iv2', 3:'iv3'};
+  document.getElementById(map[hours]).classList.add('active');
+  scheduleAlarm();
 }
 
-function checkNotif(){
-  if('Notification'in window&&Notification.permission==='granted'){
-    notifGranted=true;
-    document.getElementById('notifBanner').className='notif-banner granted';
-    document.getElementById('notifText').textContent='✓ Bildirimler açık';
-  }
+function initIntervalBtns() {
+  const map = {1.5:'iv1', 2:'iv2', 3:'iv3'};
+  document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+  if(map[alarmInterval]) document.getElementById(map[alarmInterval]).classList.add('active');
 }
 
-async function requestNotif(){
-  if(!('Notification'in window)){alert('Bu tarayıcı bildirim desteklemiyor.');return;}
-  const p=await Notification.requestPermission();
-  if(p!=='granted'){alert('Bildirim izni reddedildi.');return;}
-  notifGranted=true;
-  document.getElementById('notifBanner').className='notif-banner granted';
-  document.getElementById('notifText').textContent='✓ Bildirimler açık';
-  await subscribePush();
-  scheduleNotif();
+function scheduleAlarm() {
+  clearTimeout(alarmTimeout);
+  if (!feedH.length) return;
+  const last = feedH[0];
+  const nextSide = last.startSide === 'sol' ? 'Sag' : 'Sol';
+  const delay = Math.max(0, last.timestamp + alarmInterval * 3600000 - Date.now());
+  alarmTimeout = setTimeout(() => triggerAlarm(nextSide, last.timestamp), delay);
 }
 
-async function subscribePush(){
+function triggerAlarm(nextSide, lastTs) {
+  // Ses çal
   try {
-    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    const reg = await navigator.serviceWorker.ready;
-    swRegistration = reg;
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
-    });
-    pushSubscription = sub;
-    localStorage.setItem('bb_push_sub', JSON.stringify(sub));
-    // Netlify subscribe fonksiyonuna kaydet (test bildirimi gönderir)
-    await fetch('/.netlify/functions/subscribe', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({subscription: sub})
-    });
-  } catch(e) { console.log('Push subscribe error:', e); }
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(freq, start, dur) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq;
+      o.type = 'sine';
+      g.gain.setValueAtTime(0.4, ctx.currentTime + start);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      o.start(ctx.currentTime + start);
+      o.stop(ctx.currentTime + start + dur + 0.1);
+    }
+    // Güzel melodi
+    beep(523, 0, 0.3);
+    beep(659, 0.35, 0.3);
+    beep(784, 0.7, 0.3);
+    beep(659, 1.05, 0.3);
+    beep(784, 1.4, 0.5);
+    setTimeout(() => {
+      beep(523, 0, 0.3); beep(659, 0.35, 0.3);
+      beep(784, 0.7, 0.3); beep(659, 1.05, 0.3);
+      beep(784, 1.4, 0.5);
+    }, 2200);
+  } catch(e) {}
+
+  // Ekran uyarısı
+  const overlay = document.getElementById('alarmOverlay');
+  overlay.style.display = 'flex';
+  document.getElementById('alarmSideText').textContent = `Sıradaki: ${nextSide === 'sol' ? 'Sol 👈' : 'Sag 👉'} taraf`;
+  const h = Math.floor(alarmInterval);
+  const m = Math.round((alarmInterval - h) * 60);
+  document.getElementById('alarmTimeText').textContent = `${h > 0 ? h + ' saat ' : ''}${m > 0 ? m + ' dakika' : ''} geçti`;
+
+  // Titreşim
+  if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
 }
 
-function scheduleNotif(){
-  if(!feedH.length) return;
-  const last=feedH[0];
-  const nextSide=last.startSide==='sol'?'Sağ':'Sol';
-  const delay=Math.max(0, last.timestamp+2*60000-Date.now());
-
-  // 1. Service Worker üzerinden yerel zamanlı bildirim (uygulama kapalıyken de çalışır)
-  if(swRegistration) {
-    navigator.serviceWorker.controller && navigator.serviceWorker.controller.postMessage({
-      type:'SCHEDULE_NOTIFICATION',
-      delayMs: delay,
-      title:'🤱 Emzirme Vakti!',
-      body:`2 saat geçti. Sıradaki: ${nextSide} taraf 👶`
-    });
-  }
-
-  // 2. Push API üzerinden sunucu bildirimi (uygulama tamamen kapalıyken)
-  const sub = pushSubscription || JSON.parse(localStorage.getItem('bb_push_sub') || 'null');
-  if(sub && delay > 0) {
-    // 2 saati küçük parçalara bölerek Netlify function timeout'unu aşıyoruz
-    // Client-side setTimeout + push kombinasyonu
-    clearTimeout(window._pushTout);
-    window._pushTout = setTimeout(async () => {
-      try {
-        await fetch('/.netlify/functions/send-push', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({subscription: sub, nextSide})
-        });
-      } catch(e){}
-    }, delay);
-  }
+function dismissAlarm() {
+  document.getElementById('alarmOverlay').style.display = 'none';
+  scheduleAlarm();
 }
+
+function checkNotif(){ /* artık kullanılmıyor */ }
+function requestNotif(){ /* artık kullanılmıyor */ }
+function subscribePush(){ /* artık kullanılmıyor */ }
+function scheduleNotif(){ scheduleAlarm(); }
 
 // ── PWA ──
 function initPWA(){
@@ -639,7 +649,7 @@ function saveActive(){
 function updateCountdown(){
   const el=document.getElementById('countdown'),info=document.getElementById('nextSideInfo');
   if(!feedH.length){el.textContent='—';info.innerHTML='İlk emzirmeyi kaydedin';return;}
-  const last=feedH[0],nextSide=last.startSide==='sol'?'Sağ':'Sol',nextTs=last.timestamp+2*60000;
+  const last=feedH[0],nextSide=last.startSide==='sol'?'Sağ':'Sol',nextTs=last.timestamp+2*3600000;
   function refresh(){
     const diff=nextTs-Date.now();
     if(diff<=0){el.textContent='Şimdi!';}
@@ -879,9 +889,9 @@ function fmt(secs){const m=Math.floor(secs/60),s=secs%60;return`${pad(m)}:${pad(
 function pad(n){return String(n).padStart(2,'0');}
 
 // ── INIT ──
-checkNotif();restoreSession();updateCountdown();renderFeedHistory();
+initIntervalBtns();restoreSession();updateCountdown();renderFeedHistory();
 renderDiaperCd();renderDiaperHistory();renderSleepStatus();renderWeightHistory();
-scheduleNotif();
+scheduleAlarm();
 initPWA();
 </script>
 </body>
