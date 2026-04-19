@@ -441,7 +441,7 @@ function scheduleNotif(){
   if(!feedH.length) return;
   const last=feedH[0];
   const nextSide=last.startSide==='sol'?'Sağ':'Sol';
-  const delay=Math.max(0, last.timestamp+2*3600000-Date.now());
+  const delay=Math.max(0, last.timestamp+2*60000-Date.now());
 
   // 1. Service Worker üzerinden yerel zamanlı bildirim (uygulama kapalıyken de çalışır)
   if(swRegistration) {
@@ -639,7 +639,7 @@ function saveActive(){
 function updateCountdown(){
   const el=document.getElementById('countdown'),info=document.getElementById('nextSideInfo');
   if(!feedH.length){el.textContent='—';info.innerHTML='İlk emzirmeyi kaydedin';return;}
-  const last=feedH[0],nextSide=last.startSide==='sol'?'Sağ':'Sol',nextTs=last.timestamp+2*3600000;
+  const last=feedH[0],nextSide=last.startSide==='sol'?'Sağ':'Sol',nextTs=last.timestamp+2*60000;
   function refresh(){
     const diff=nextTs-Date.now();
     if(diff<=0){el.textContent='Şimdi!';}
