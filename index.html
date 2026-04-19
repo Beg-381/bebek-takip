@@ -497,7 +497,6 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
   </div>
 </div>
 
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -515,65 +514,60 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const DATA_DOC = doc(db, "bebek", "ortak");
 
-// Firestore'a yaz
-window.fsSet = async function(data) {
-  try { await setDoc(DATA_DOC, data, {merge: true}); } catch(e) { console.error('FS write:', e); }
-};
+function applyData(d) {
+  const map = {feed:'bb_feed',diaper:'bb_diaper',sleep:'bb_sleep',weight:'bb_weight',height:'bb_height',fever:'bb_fever',vaccine:'bb_vaccine',notes:'bb_notes'};
+  const varMap = {feed:'feedH',diaper:'diaperH',sleep:'sleepH',weight:'weightH',height:'heightH',fever:'feverH',vaccine:'vaccineH',notes:'notesH'};
+  Object.keys(map).forEach(k => {
+    if (d[k]) {
+      window[varMap[k]] = d[k];
+      localStorage.setItem(map[k], JSON.stringify(d[k]));
+    }
+  });
+}
 
-// Değişiklikleri dinle (karşı taraftan gelen güncellemeler)
-let _ignoreNext = false;
-onSnapshot(DATA_DOC, (snap) => {
-  if (!snap.exists()) return;
-  if (_ignoreNext) { _ignoreNext = false; return; }
-  const d = snap.data();
-  if (d.feed)    { window.feedH    = d.feed;    localStorage.setItem('bb_feed',    JSON.stringify(d.feed));    }
-  if (d.diaper)  { window.diaperH  = d.diaper;  localStorage.setItem('bb_diaper',  JSON.stringify(d.diaper));  }
-  if (d.sleep)   { window.sleepH   = d.sleep;   localStorage.setItem('bb_sleep',   JSON.stringify(d.sleep));   }
-  if (d.weight)  { window.weightH  = d.weight;  localStorage.setItem('bb_weight',  JSON.stringify(d.weight));  }
-  if (d.height)  { window.heightH  = d.height;  localStorage.setItem('bb_height',  JSON.stringify(d.height));  }
-  if (d.fever)   { window.feverH   = d.fever;   localStorage.setItem('bb_fever',   JSON.stringify(d.fever));   }
-  if (d.vaccine) { window.vaccineH = d.vaccine; localStorage.setItem('bb_vaccine', JSON.stringify(d.vaccine)); }
-  if (d.notes)   { window.notesH   = d.notes;   localStorage.setItem('bb_notes',   JSON.stringify(d.notes));   }
-  // UI güncelle
-  if (typeof updateCountdown === 'function') {
-    updateCountdown(); renderFeedHistory(); renderDiaperCd(); renderDiaperHistory();
-    renderSleepStatus(); renderWeightHistory(); renderFeverHistory(); renderVaccineHistory(); renderNotes();
-    scheduleAlarm();
-  }
-});
+function refreshUI() {
+  if (typeof updateCountdown !== 'function') return;
+  updateCountdown(); renderFeedHistory(); renderDiaperCd(); renderDiaperHistory();
+  renderSleepStatus(); renderWeightHistory(); renderFeverHistory(); renderVaccineHistory(); renderNotes();
+  scheduleAlarm();
+}
 
-// İlk yükleme: Firestore'dan çek, yoksa localStorage'ı yükle
+// İlk yükleme — Firestore'dan çek, UI'yi güncelle
 getDoc(DATA_DOC).then(snap => {
-  if (snap.exists()) {
-    const d = snap.data();
-    if (d.feed)    { window.feedH    = d.feed;    localStorage.setItem('bb_feed',    JSON.stringify(d.feed));    }
-    if (d.diaper)  { window.diaperH  = d.diaper;  localStorage.setItem('bb_diaper',  JSON.stringify(d.diaper));  }
-    if (d.sleep)   { window.sleepH   = d.sleep;   localStorage.setItem('bb_sleep',   JSON.stringify(d.sleep));   }
-    if (d.weight)  { window.weightH  = d.weight;  localStorage.setItem('bb_weight',  JSON.stringify(d.weight));  }
-    if (d.height)  { window.heightH  = d.height;  localStorage.setItem('bb_height',  JSON.stringify(d.height));  }
-    if (d.fever)   { window.feverH   = d.fever;   localStorage.setItem('bb_fever',   JSON.stringify(d.fever));   }
-    if (d.vaccine) { window.vaccineH = d.vaccine; localStorage.setItem('bb_vaccine', JSON.stringify(d.vaccine)); }
-    if (d.notes)   { window.notesH   = d.notes;   localStorage.setItem('bb_notes',   JSON.stringify(d.notes));   }
-  }
+  if (snap.exists()) { applyData(snap.data()); refreshUI(); }
 });
+
+// Gerçek zamanlı dinle
+let firstSnap = true;
+onSnapshot(DATA_DOC, snap => {
+  if (!snap.exists()) return;
+  if (firstSnap) { firstSnap = false; return; } // ilk tetiklenmeyi atla
+  applyData(snap.data());
+  refreshUI();
+});
+
+// sv() çağrıldığında Firestore'a yaz
+window.fsWrite = async function(key, data) {
+  const keyMap = {bb_feed:'feed',bb_diaper:'diaper',bb_sleep:'sleep',bb_weight:'weight',bb_height:'height',bb_fever:'fever',bb_vaccine:'vaccine',bb_notes:'notes'};
+  if (!keyMap[key]) return;
+  try { await setDoc(DATA_DOC, {[keyMap[key]]: data}, {merge: true}); } catch(e) { console.error('FS:', e); }
+};
 </script>
 
 <script>
 // ── DATA ──
-let feedH   = JSON.parse(localStorage.getItem('bb_feed')   || '[]');
-let diaperH = JSON.parse(localStorage.getItem('bb_diaper') || '[]');
-let sleepH  = JSON.parse(localStorage.getItem('bb_sleep')  || '[]');
-let weightH = JSON.parse(localStorage.getItem('bb_weight') || '[]');
-let heightH = JSON.parse(localStorage.getItem('bb_height') || '[]');
-let feverH  = JSON.parse(localStorage.getItem('bb_fever')  || '[]');
-let vaccineH= JSON.parse(localStorage.getItem('bb_vaccine')|| '[]');
-let notesH  = JSON.parse(localStorage.getItem('bb_notes')  || '[]');
+var feedH   = JSON.parse(localStorage.getItem('bb_feed')   || '[]');
+var diaperH = JSON.parse(localStorage.getItem('bb_diaper') || '[]');
+var sleepH  = JSON.parse(localStorage.getItem('bb_sleep')  || '[]');
+var weightH = JSON.parse(localStorage.getItem('bb_weight') || '[]');
+var heightH = JSON.parse(localStorage.getItem('bb_height') || '[]');
+var feverH  = JSON.parse(localStorage.getItem('bb_fever')  || '[]');
+var vaccineH= JSON.parse(localStorage.getItem('bb_vaccine')|| '[]');
+var notesH  = JSON.parse(localStorage.getItem('bb_notes')  || '[]');
 
 function sv(k,d){
   localStorage.setItem(k,JSON.stringify(d));
-  // Firestore'a da yaz
-  const keyMap = {bb_feed:'feed',bb_diaper:'diaper',bb_sleep:'sleep',bb_weight:'weight',bb_height:'height',bb_fever:'fever',bb_vaccine:'vaccine',bb_notes:'notes'};
-  if(window.fsSet && keyMap[k]) window.fsSet({[keyMap[k]]:d});
+  if(window.fsWrite) window.fsWrite(k, d);
 }
 
 // ── DARK MODE ──
