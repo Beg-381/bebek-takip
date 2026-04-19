@@ -470,30 +470,44 @@ function scheduleAlarm() {
   if (!feedH.length) return;
   const last = feedH[0];
   const nextSide = last.startSide === 'sol' ? 'Sag' : 'Sol';
-  const delay = Math.max(0, last.timestamp + alarmInterval * 3600000 - Date.now());
+  const nextTs = last.timestamp + alarmInterval * 3600000;
+  const delay = Math.max(0, nextTs - Date.now());
+  // Bu kayıt için alarm zaten çaldıysa tekrar çalma
+  const lastAlarm = parseInt(localStorage.getItem('bb_last_alarm') || '0');
+  if (lastAlarm === last.timestamp && delay < 5000) return;
   alarmTimeout = setTimeout(() => triggerAlarm(nextSide, last.timestamp), delay);
 }
 
-function triggerAlarm(nextSide, lastTs) {
-  // Ses çal
+// AudioContext'i önceden hazırla (kullanıcı etkileşimiyle)
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+// Herhangi bir dokunuşta AudioContext'i hazırla
+document.addEventListener('touchstart', () => getAudioCtx(), {once: false, passive: true});
+document.addEventListener('click', () => getAudioCtx(), {once: false, passive: true});
+
+function playAlarmSound() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getAudioCtx();
+    if (!ctx) return;
     function beep(freq, start, dur) {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
       o.frequency.value = freq;
       o.type = 'sine';
-      g.gain.setValueAtTime(0.4, ctx.currentTime + start);
+      g.gain.setValueAtTime(0.5, ctx.currentTime + start);
       g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
       o.start(ctx.currentTime + start);
       o.stop(ctx.currentTime + start + dur + 0.1);
     }
-    // Güzel melodi
-    beep(523, 0, 0.3);
-    beep(659, 0.35, 0.3);
-    beep(784, 0.7, 0.3);
-    beep(659, 1.05, 0.3);
+    beep(523, 0, 0.3); beep(659, 0.35, 0.3);
+    beep(784, 0.7, 0.3); beep(659, 1.05, 0.3);
     beep(784, 1.4, 0.5);
     setTimeout(() => {
       beep(523, 0, 0.3); beep(659, 0.35, 0.3);
@@ -501,6 +515,11 @@ function triggerAlarm(nextSide, lastTs) {
       beep(784, 1.4, 0.5);
     }, 2200);
   } catch(e) {}
+}
+
+function triggerAlarm(nextSide, lastTs) {
+  // Ses çal
+  playAlarmSound();
 
   // Ekran uyarısı
   const overlay = document.getElementById('alarmOverlay');
@@ -519,6 +538,8 @@ function dismissAlarm() {
   const overlay = document.getElementById('alarmOverlay');
   overlay.style.display = 'none';
   overlay.style.visibility = 'hidden';
+  // Son alarmu işaretliyoruz — aynı kayıt için tekrar tetiklenmesin
+  if(feedH.length) localStorage.setItem('bb_last_alarm', feedH[0].timestamp);
   scheduleAlarm();
 }
 
