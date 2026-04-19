@@ -31,9 +31,11 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background 0.3s,color 0.3s;}
 
-.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
-.tab{flex:1;border:none;background:none;font-family:'Nunito',sans-serif;font-size:0.6rem;font-weight:700;color:var(--text-light);padding:10px 2px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;border-bottom:2px solid transparent;transition:color 0.2s;}
-.tab .ti{font-size:1.1rem;}
+.tabs{display:flex;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+.tab-row{display:flex;width:100%;border-bottom:1px solid var(--border);}
+.tab-row:last-child{border-bottom:none;}
+.tab{flex:1;border:none;background:none;font-family:'Nunito',sans-serif;font-size:0.62rem;font-weight:700;color:var(--text-light);padding:8px 2px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;border-bottom:2px solid transparent;transition:color 0.2s;}
+.tab .ti{font-size:1.05rem;}
 .tab.active{color:var(--rose-dark);border-bottom-color:var(--rose-dark);}
 
 header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;max-width:480px;margin:0 auto;}
@@ -164,12 +166,19 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 <body>
 
 <div class="tabs">
-  <button class="tab active" onclick="showTab('emzirme')"><span class="ti">🤱</span>Emzirme</button>
-  <button class="tab" onclick="showTab('bez')"><span class="ti">🍼</span>Bez</button>
-  <button class="tab" onclick="showTab('uyku')"><span class="ti">😴</span>Uyku</button>
-  <button class="tab" onclick="showTab('kilo')"><span class="ti">⚖️</span>Kilo/Boy</button>
-  <button class="tab" onclick="showTab('analiz')"><span class="ti">📊</span>Analiz</button>
-  <button class="tab" onclick="showTab('yedek')"><span class="ti">💾</span>Yedek</button>
+  <div class="tab-row">
+    <button class="tab active" onclick="showTab('emzirme')"><span class="ti">🤱</span>Emzirme</button>
+    <button class="tab" onclick="showTab('bez')"><span class="ti">🍼</span>Bez</button>
+    <button class="tab" onclick="showTab('uyku')"><span class="ti">😴</span>Uyku</button>
+    <button class="tab" onclick="showTab('kilo')"><span class="ti">⚖️</span>Kilo/Boy</button>
+    <button class="tab" onclick="showTab('analiz')"><span class="ti">📊</span>Analiz</button>
+  </div>
+  <div class="tab-row">
+    <button class="tab" onclick="showTab('ates')"><span class="ti">🌡️</span>Ateş</button>
+    <button class="tab" onclick="showTab('igne')"><span class="ti">💉</span>İğne</button>
+    <button class="tab" onclick="showTab('notlar')"><span class="ti">📝</span>Notlar</button>
+    <button class="tab" onclick="showTab('yedek')"><span class="ti">💾</span>Yedek</button>
+  </div>
 </div>
 
 <header>
@@ -189,7 +198,6 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
     </div>
     <div style="text-align:right;margin-top:8px;">
       <button onclick="setTimeout(()=>triggerAlarm(feedH.length&&feedH[0].startSide==='sol'?'Sağ':'Sol',Date.now()),10000)" style="border:none;background:rgba(255,152,0,0.12);color:#e65100;border-radius:8px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.68rem;cursor:pointer;">🧪 10sn test</button>
-    </div>
     </div>
   </div>
   <!-- ALARM OVERLAY -->
@@ -389,6 +397,84 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
   </div>
 </div>
 
+
+<!-- ATEŞ -->
+<div class="page" id="page-ates">
+  <div class="card">
+    <div class="clabel">Ateş Ekle</div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+      <div style="flex:1;">
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Derece (°C)</div>
+        <input class="winp" id="feverVal" type="number" step="0.1" min="35" max="42" placeholder="37.5" style="width:100%;">
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Ölçüm yeri</div>
+        <select id="feverLocation" class="winp" style="width:100%;padding:10px 12px;">
+          <option value="koltukaltı">Koltukaltı</option>
+          <option value="kulak">Kulak</option>
+          <option value="ağız">Ağız</option>
+          <option value="alın">Alın</option>
+        </select>
+      </div>
+    </div>
+    <input class="note-inp" id="feverNote" placeholder="Not (ilaç verildi, doktor arandı...)" maxlength="100">
+    <button class="wsave" style="width:100%;padding:13px;border-radius:12px;font-size:0.95rem;" onclick="saveFever()">💾 Kaydet</button>
+  </div>
+  <div class="card">
+    <div class="clabel">Son Ölçümler</div>
+    <div id="feverHistory"><div class="history-empty">Henüz kayıt yok</div></div>
+    <button class="clear-btn" onclick="clearFever()">Geçmişi temizle</button>
+  </div>
+</div>
+
+<!-- İĞNE/AŞI -->
+<div class="page" id="page-igne">
+  <div class="card">
+    <div class="clabel">Aşı/İğne Ekle</div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Aşı Adı</div>
+      <input class="note-inp" id="vaccineName" placeholder="Hepatit B, BCG, DBT..." maxlength="60" style="margin-bottom:0;">
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <div style="flex:1;">
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Tarih</div>
+        <input type="date" id="vaccineDate" class="winp" style="width:100%;padding:9px 12px;">
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:0.72rem;color:var(--text-light);margin-bottom:4px;">Doz</div>
+        <select id="vaccineDose" class="winp" style="width:100%;padding:9px 12px;">
+          <option value="1. doz">1. Doz</option>
+          <option value="2. doz">2. Doz</option>
+          <option value="3. doz">3. Doz</option>
+          <option value="Rapel">Rapel</option>
+          <option value="Tek doz">Tek Doz</option>
+        </select>
+      </div>
+    </div>
+    <input class="note-inp" id="vaccineNote" placeholder="Not (yan etki, doktor...)" maxlength="100">
+    <button class="wsave" style="width:100%;padding:13px;border-radius:12px;font-size:0.95rem;" onclick="saveVaccine()">💾 Kaydet</button>
+  </div>
+  <div class="card">
+    <div class="clabel">Aşı Geçmişi</div>
+    <div id="vaccineHistory"><div class="history-empty">Henüz kayıt yok</div></div>
+    <button class="clear-btn" onclick="clearVaccine()">Geçmişi temizle</button>
+  </div>
+</div>
+
+
+<!-- NOTLAR -->
+<div class="page" id="page-notlar">
+  <div class="card">
+    <div class="clabel">Yeni Not</div>
+    <input class="note-inp" id="noteTitle" placeholder="Başlık (opsiyonel)..." maxlength="60" style="margin-bottom:8px;">
+    <textarea id="noteBody" placeholder="Notunu yaz..." maxlength="1000"
+      style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Nunito',sans-serif;font-size:0.88rem;background:var(--bg);color:var(--text);outline:none;resize:none;min-height:100px;line-height:1.5;margin-bottom:10px;"
+      onfocus="this.style.borderColor='var(--rose)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    <button onclick="saveNote()" style="width:100%;border:none;border-radius:12px;padding:13px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.95rem;cursor:pointer;background:linear-gradient(135deg,var(--rose),var(--rose-dark));color:white;box-shadow:0 4px 16px rgba(224,112,144,0.3);">💾 Notu Kaydet</button>
+  </div>
+  <div id="notesList"></div>
+</div>
+
 <!-- YEDEK -->
 <div class="page" id="page-yedek">
   <div class="card">
@@ -418,6 +504,9 @@ let diaperH = JSON.parse(localStorage.getItem('bb_diaper') || '[]');
 let sleepH  = JSON.parse(localStorage.getItem('bb_sleep')  || '[]');
 let weightH = JSON.parse(localStorage.getItem('bb_weight') || '[]');
 let heightH = JSON.parse(localStorage.getItem('bb_height') || '[]');
+let feverH  = JSON.parse(localStorage.getItem('bb_fever')  || '[]');
+let vaccineH= JSON.parse(localStorage.getItem('bb_vaccine')|| '[]');
+let notesH  = JSON.parse(localStorage.getItem('bb_notes')  || '[]');
 function sv(k,d){localStorage.setItem(k,JSON.stringify(d));}
 
 // ── DARK MODE ──
@@ -430,8 +519,8 @@ function toggleDark(){
 }
 
 // ── TABS ──
-const tabNames=['emzirme','bez','uyku','kilo','analiz','yedek'];
-const tabTitles={emzirme:'🤱 Emzirme',bez:'🍼 Bez',uyku:'😴 Uyku',kilo:'⚖️ Kilo/Boy',analiz:'📊 Analiz',yedek:'💾 Yedek'};
+const tabNames=['emzirme','bez','uyku','kilo','analiz','ates','igne','notlar','yedek'];
+const tabTitles={emzirme:'🤱 Emzirme',bez:'🍼 Bez',uyku:'😴 Uyku',kilo:'⚖️ Kilo/Boy',analiz:'📊 Analiz',ates:'🌡️ Ateş',igne:'💉 İğne/Aşı',notlar:'📝 Notlar',yedek:'💾 Yedek'};
 function showTab(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -442,12 +531,18 @@ function showTab(name){
   if(name==='uyku'){renderSleepStatus();renderSleepHistory();}
   if(name==='bez'){renderDiaperCd();renderDiaperHistory();}
   if(name==='yedek')renderStorageInfo();
+  if(name==='ates'){renderFeverHistory();}
+  if(name==='igne'){renderVaccineHistory();}
+  if(name==='notlar'){renderNotes();}
 }
 
 // ── ARALIK & ALARM ──
 let alarmInterval = parseFloat(localStorage.getItem('bb_interval') || '2');
 let alarmTimeout = null;
 let alarmAudio = null;
+let swRegistration = null;
+let notifGranted = false;
+let pushSubscription = null;
 
 function setInterval_(hours) {
   alarmInterval = hours;
@@ -469,45 +564,44 @@ function scheduleAlarm() {
   clearTimeout(alarmTimeout);
   if (!feedH.length) return;
   const last = feedH[0];
-  const nextSide = last.startSide === 'sol' ? 'Sag' : 'Sol';
+  const nextSide = last.startSide === 'sol' ? 'Sağ' : 'Sol';
   const nextTs = last.timestamp + alarmInterval * 3600000;
   const delay = Math.max(0, nextTs - Date.now());
-  // Bu kayıt için alarm zaten çaldıysa tekrar çalma
   const lastAlarm = parseInt(localStorage.getItem('bb_last_alarm') || '0');
   if (lastAlarm === last.timestamp && delay < 5000) return;
   alarmTimeout = setTimeout(() => triggerAlarm(nextSide, last.timestamp), delay);
 }
 
-// AudioContext'i önceden hazırla (kullanıcı etkileşimiyle)
+// AudioContext önceden hazırla
 let _audioCtx = null;
 function getAudioCtx() {
-  if (!_audioCtx) {
-    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-  }
+  if (!_audioCtx) { try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
   if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
   return _audioCtx;
 }
-// Herhangi bir dokunuşta AudioContext'i hazırla
-document.addEventListener('touchstart', () => getAudioCtx(), {once: false, passive: true});
-document.addEventListener('click', () => getAudioCtx(), {once: false, passive: true});
+document.addEventListener('touchstart', () => getAudioCtx(), {passive: true});
+document.addEventListener('click', () => getAudioCtx(), {passive: true});
 
-function playAlarmSound() {
+function triggerAlarm(nextSide, lastTs) {
+  // Ses çal
   try {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
+    const ctx = getAudioCtx() || new (window.AudioContext || window.webkitAudioContext)();
     function beep(freq, start, dur) {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
       o.frequency.value = freq;
       o.type = 'sine';
-      g.gain.setValueAtTime(0.5, ctx.currentTime + start);
+      g.gain.setValueAtTime(0.6, ctx.currentTime + start);
       g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
       o.start(ctx.currentTime + start);
       o.stop(ctx.currentTime + start + dur + 0.1);
     }
-    beep(523, 0, 0.3); beep(659, 0.35, 0.3);
-    beep(784, 0.7, 0.3); beep(659, 1.05, 0.3);
+    // Güzel melodi
+    beep(523, 0, 0.3);
+    beep(659, 0.35, 0.3);
+    beep(784, 0.7, 0.3);
+    beep(659, 1.05, 0.3);
     beep(784, 1.4, 0.5);
     setTimeout(() => {
       beep(523, 0, 0.3); beep(659, 0.35, 0.3);
@@ -515,30 +609,24 @@ function playAlarmSound() {
       beep(784, 1.4, 0.5);
     }, 2200);
   } catch(e) {}
-}
-
-function triggerAlarm(nextSide, lastTs) {
-  // Ses çal
-  playAlarmSound();
 
   // Ekran uyarısı
   const overlay = document.getElementById('alarmOverlay');
-  overlay.style.visibility = 'visible';
   overlay.style.display = 'flex';
-  document.getElementById('alarmSideText').textContent = `Sıradaki: ${nextSide === 'sol' ? 'Sol 👈' : 'Sag 👉'} taraf`;
+  overlay.style.visibility = 'visible';
+  document.getElementById('alarmSideText').textContent = `Sıradaki: ${nextSide} taraf`;
   const h = Math.floor(alarmInterval);
   const m = Math.round((alarmInterval - h) * 60);
   document.getElementById('alarmTimeText').textContent = `${h > 0 ? h + ' saat ' : ''}${m > 0 ? m + ' dakika' : ''} geçti`;
 
   // Titreşim
-  if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+  if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 600, 200, 600]);
 }
 
 function dismissAlarm() {
   const overlay = document.getElementById('alarmOverlay');
   overlay.style.display = 'none';
   overlay.style.visibility = 'hidden';
-  // Son alarmu işaretliyoruz — aynı kayıt için tekrar tetiklenmesin
   if(feedH.length) localStorage.setItem('bb_last_alarm', feedH[0].timestamp);
   scheduleAlarm();
 }
@@ -557,7 +645,7 @@ function initPWA(){
         swRegistration = reg;
         // Mevcut push aboneliğini kontrol et
         const savedSub = localStorage.getItem('bb_push_sub');
-        if(savedSub && notifGranted) {
+        if(savedSub) {
           try { pushSubscription = JSON.parse(savedSub); } catch{}
         }
       })
@@ -735,7 +823,7 @@ function renderFeedHistory(){
     const icon=e.startSide==='sol'?'👈':'👉',lbl=e.startSide==='sol'?'Sol başladı':'Sağ başladı';
     const detail=`Sol: ${fmt(e.leftSecs)} · Sağ: ${fmt(e.rightSecs)}`;
     const transfer=e.transferSecs>0?`<div class="htransfer">🔄 Geçiş: ${fmt(e.transferSecs)}</div>`:'';
-    return `<div class="hi"><div class="hbadge ${e.startSide==='sol'?'sol':'sag'}">${icon}</div><div class="hinfo"><div class="hside">${lbl}</div><div class="htime">${ts} · ${detail}</div>${transfer}${e.note?`<div class="hnote">📝 ${e.note}</div>`:''}</div><div class="hdur">${fmt(e.totalSecs)}</div></div>`;
+    return `<div class="hi"><div class="hbadge ${e.startSide==='sol'?'sol':'sag'}">${icon}</div><div class="hinfo"><div class="hside">${lbl}</div><div class="htime">${ts} · ${detail}</div>${transfer}${e.note?`<div class="hnote">📝 ${e.note}</div>`:''}</div><div class="hdur">${fmt(e.totalSecs)}</div><button onclick="deleteFeed(${i})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;padding:0 4px;flex-shrink:0;">🗑️</button></div>`;
   }).join('');
 }
 function updateManualDuration() {
@@ -816,6 +904,7 @@ function saveManual() {
   setTimeout(() => toggleManual(), 1000);
 }
 
+function deleteFeed(i){feedH.splice(i,1);sv('bb_feed',feedH);renderFeedHistory();updateCountdown();scheduleAlarm();}
 function clearFeed(){if(!confirm('Emzirme geçmişi silinsin mi?'))return;feedH=[];sv('bb_feed',feedH);renderFeedHistory();updateCountdown();}
 
 // ── DIAPER ──
@@ -832,9 +921,10 @@ function renderDiaperHistory(){
   if(!diaperH.length){el.innerHTML='<div class="history-empty">Henüz kayıt yok</div>';return;}
   el.innerHTML=diaperH.slice(0,10).map(e=>{
     const d=new Date(e.timestamp),ts=d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="hi"><div class="hbadge diaper">${e.type==='ıslak'?'💧':'💩'}</div><div class="hinfo"><div class="hside">${e.type==='ıslak'?'Islak bez':'Kirli bez'}</div><div class="htime">${ts}</div></div></div>`;
+    return `<div class="hi"><div class="hbadge diaper">${e.type==='ıslak'?'💧':'💩'}</div><div class="hinfo"><div class="hside">${e.type==='ıslak'?'Islak bez':'Kirli bez'}</div><div class="htime">${ts}</div></div><button onclick="deleteDiaper(${i})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;padding:0 4px;">🗑️</button></div>`;
   }).join('');
 }
+function deleteDiaper(i){diaperH.splice(i,1);sv('bb_diaper',diaperH);renderDiaperCd();renderDiaperHistory();}
 function clearDiaper(){if(!confirm('Bez geçmişi silinsin mi?'))return;diaperH=[];sv('bb_diaper',diaperH);renderDiaperCd();renderDiaperHistory();}
 
 // ── SLEEP ──
@@ -854,9 +944,10 @@ function renderSleepHistory(){
     const d=new Date(e.timestamp),ts=d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
     const isSleep=e.type==='uyudu';let dur='';
     if(isSleep){const wi=sleepH.slice(i+1).findIndex(x=>x.type==='uyandı');if(wi!==-1){const secs=Math.abs(Math.floor((e.timestamp-sleepH[i+1+wi].timestamp)/1000)),h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);dur=h>0?`${h}s ${pad(m)}d`:`${pad(m)}d`;}}
-    return `<div class="hi"><div class="hbadge ${isSleep?'sleeping':'awake'}">${isSleep?'😴':'☀️'}</div><div class="hinfo"><div class="hside">${isSleep?'Uyudu':'Uyandı'}</div><div class="htime">${ts}</div></div>${dur?`<div class="hdur">${dur}</div>`:''}</div>`;
+    return `<div class="hi"><div class="hbadge ${isSleep?'sleeping':'awake'}">${isSleep?'😴':'☀️'}</div><div class="hinfo"><div class="hside">${isSleep?'Uyudu':'Uyandı'}</div><div class="htime">${ts}</div></div>${dur?`<div class="hdur">${dur}</div>`:''}<button onclick="deleteSleep(${i})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;padding:0 4px;">🗑️</button></div>`;
   }).join('');
 }
+function deleteSleep(i){sleepH.splice(i,1);sv('bb_sleep',sleepH);renderSleepStatus();renderSleepHistory();}
 function clearSleep(){if(!confirm('Uyku geçmişi silinsin mi?'))return;sleepH=[];sv('bb_sleep',sleepH);renderSleepStatus();renderSleepHistory();}
 
 // ── WEIGHT / HEIGHT ──
@@ -983,7 +1074,7 @@ function exportData(){
   const data={
     version:1,
     exportedAt:new Date().toISOString(),
-    feed:feedH,diaper:diaperH,sleep:sleepH,weight:weightH,height:heightH
+    feed:feedH,diaper:diaperH,sleep:sleepH,weight:weightH,height:heightH,fever:feverH,vaccine:vaccineH,notes:notesH
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1004,7 +1095,8 @@ function importData(event){
       if(!data.version||!data.feed){msg.textContent='❌ Geçersiz dosya formatı';msg.style.color='var(--rose-dark)';return;}
       if(!confirm(`Yedek bulundu (${new Date(data.exportedAt).toLocaleDateString('tr-TR')}). Mevcut veriler silinecek. Devam?`)){event.target.value='';return;}
       feedH=data.feed||[];diaperH=data.diaper||[];sleepH=data.sleep||[];
-      weightH=data.weight||[];heightH=data.height||[];
+      weightH=data.weight||[];heightH=data.height||[];feverH=data.fever||[];vaccineH=data.vaccine||[];
+      sv('bb_fever',feverH);sv('bb_vaccine',vaccineH);
       sv('bb_feed',feedH);sv('bb_diaper',diaperH);sv('bb_sleep',sleepH);
       sv('bb_weight',weightH);sv('bb_height',heightH);
       renderFeedHistory();renderDiaperCd();renderSleepStatus();renderWeightHistory();updateCountdown();
@@ -1018,9 +1110,9 @@ function importData(event){
 }
 
 function renderStorageInfo(){
-  const keys=['bb_feed','bb_diaper','bb_sleep','bb_weight','bb_height'];
-  const labels={bb_feed:'Emzirme',bb_diaper:'Bez',bb_sleep:'Uyku',bb_weight:'Kilo',bb_height:'Boy'};
-  const counts={bb_feed:feedH.length,bb_diaper:diaperH.length,bb_sleep:sleepH.length,bb_weight:weightH.length,bb_height:heightH.length};
+  const keys=['bb_feed','bb_diaper','bb_sleep','bb_weight','bb_height','bb_fever','bb_vaccine','bb_notes'];
+  const labels={bb_feed:'Emzirme',bb_diaper:'Bez',bb_sleep:'Uyku',bb_weight:'Kilo',bb_height:'Boy',bb_fever:'Ateş',bb_vaccine:'İğne',bb_notes:'Notlar'};
+  const counts={bb_feed:feedH.length,bb_diaper:diaperH.length,bb_sleep:sleepH.length,bb_weight:weightH.length,bb_height:heightH.length,bb_fever:feverH.length,bb_vaccine:vaccineH.length,bb_notes:notesH.length};
   let totalBytes=0;
   const rows=keys.map(k=>{
     const val=localStorage.getItem(k)||'';
@@ -1030,6 +1122,123 @@ function renderStorageInfo(){
   document.getElementById('storageInfo').innerHTML=rows+`<div class="storage-row" style="font-weight:700;margin-top:4px;"><span>Toplam</span><span>${(totalBytes/1024).toFixed(1)} KB</span></div>`;
 }
 
+
+// ── ATEŞ ──
+function saveFever(){
+  const val=parseFloat(document.getElementById('feverVal').value);
+  if(isNaN(val)||val<35||val>42){alert('35-42 arası geçerli değer girin');return;}
+  const loc=document.getElementById('feverLocation').value;
+  const note=document.getElementById('feverNote').value.trim();
+  feverH.unshift({timestamp:Date.now(),val,loc,note});
+  if(feverH.length>50)feverH=feverH.slice(0,50);
+  sv('bb_fever',feverH);
+  document.getElementById('feverVal').value='';
+  document.getElementById('feverNote').value='';
+  renderFeverHistory();
+}
+function feverColor(v){
+  if(v<37.5) return '#4aac78'; // normal
+  if(v<38.5) return '#f59e0b'; // hafif
+  if(v<39.5) return '#ea580c'; // yüksek
+  return '#e07090'; // çok yüksek
+}
+function feverLabel(v){
+  if(v<37.5) return 'Normal';
+  if(v<38.5) return 'Hafif ateş';
+  if(v<39.5) return 'Yüksek ateş';
+  return '🚨 Çok yüksek';
+}
+function renderFeverHistory(){
+  const el=document.getElementById('feverHistory');
+  if(!feverH.length){el.innerHTML='<div class="history-empty">Henüz kayıt yok</div>';return;}
+  el.innerHTML=feverH.slice(0,20).map((e,i)=>{
+    const d=new Date(e.timestamp);
+    const ts=d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    const col=feverColor(e.val);
+    const lbl=feverLabel(e.val);
+    return `<div class="hi"><div class="hbadge" style="background:${col}20;font-size:1.1rem;">🌡️</div><div class="hinfo"><div class="hside" style="color:${col}">${e.val}°C — ${lbl}</div><div class="htime">${ts} · ${e.loc}</div>${e.note?`<div class="hnote">📝 ${e.note}</div>`:''}</div><button onclick="deleteFever(${i})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;padding:0 4px;">🗑️</button></div>`;
+  }).join('');
+}
+function deleteFever(i){feverH.splice(i,1);sv('bb_fever',feverH);renderFeverHistory();}
+function clearFever(){if(!confirm('Ateş geçmişi silinsin mi?'))return;feverH=[];sv('bb_fever',feverH);renderFeverHistory();}
+
+// ── İĞNE/AŞI ──
+function saveVaccine(){
+  const name=document.getElementById('vaccineName').value.trim();
+  if(!name){alert('Aşı adı girin');return;}
+  const dateVal=document.getElementById('vaccineDate').value;
+  const dose=document.getElementById('vaccineDose').value;
+  const note=document.getElementById('vaccineNote').value.trim();
+  const timestamp=dateVal?new Date(dateVal).getTime():Date.now();
+  vaccineH.unshift({timestamp,name,dose,note});
+  vaccineH.sort((a,b)=>b.timestamp-a.timestamp);
+  if(vaccineH.length>50)vaccineH=vaccineH.slice(0,50);
+  sv('bb_vaccine',vaccineH);
+  document.getElementById('vaccineName').value='';
+  document.getElementById('vaccineNote').value='';
+  document.getElementById('vaccineDate').value='';
+  renderVaccineHistory();
+}
+function renderVaccineHistory(){
+  const el=document.getElementById('vaccineHistory');
+  if(!vaccineH.length){el.innerHTML='<div class="history-empty">Henüz kayıt yok</div>';return;}
+  el.innerHTML=vaccineH.map((e,i)=>{
+    const ts=new Date(e.timestamp).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'});
+    return `<div class="hi"><div class="hbadge" style="background:#fce7f3;font-size:1.1rem;">💉</div><div class="hinfo"><div class="hside">${e.name} <span style="font-weight:400;color:var(--text-light);font-size:0.8rem;">${e.dose}</span></div><div class="htime">${ts}</div>${e.note?`<div class="hnote">📝 ${e.note}</div>`:''}</div><button onclick="deleteVaccine(${i})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;padding:0 4px;">🗑️</button></div>`;
+  }).join('');
+}
+function deleteVaccine(i){vaccineH.splice(i,1);sv('bb_vaccine',vaccineH);renderVaccineHistory();}
+function clearVaccine(){if(!confirm('Aşı geçmişi silinsin mi?'))return;vaccineH=[];sv('bb_vaccine',vaccineH);renderVaccineHistory();}
+
+
+// ── NOTLAR ──
+function saveNote(){
+  const title=document.getElementById('noteTitle').value.trim();
+  const body=document.getElementById('noteBody').value.trim();
+  if(!body){alert('Not içeriği boş olamaz');return;}
+  notesH.unshift({id:Date.now(),timestamp:Date.now(),title,body});
+  if(notesH.length>100)notesH=notesH.slice(0,100);
+  sv('bb_notes',notesH);
+  document.getElementById('noteTitle').value='';
+  document.getElementById('noteBody').value='';
+  renderNotes();
+}
+function deleteNote(id){
+  notesH=notesH.filter(n=>n.id!==id);
+  sv('bb_notes',notesH);
+  renderNotes();
+}
+function editNote(id){
+  const n=notesH.find(x=>x.id===id);if(!n)return;
+  document.getElementById('noteTitle').value=n.title||'';
+  document.getElementById('noteBody').value=n.body||'';
+  deleteNote(id);
+  document.getElementById('noteTitle').focus();
+  window.scrollTo(0,0);
+}
+function renderNotes(){
+  const el=document.getElementById('notesList');
+  if(!notesH.length){
+    el.innerHTML='<div class="card"><div class="history-empty">Henüz not yok 📝</div></div>';
+    return;
+  }
+  el.innerHTML=notesH.map(n=>{
+    const ts=new Date(n.timestamp).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})+' '+new Date(n.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    const preview=n.body.length>120?n.body.slice(0,120)+'...':n.body;
+    return `<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div style="font-weight:700;font-size:0.9rem;color:var(--rose-dark);flex:1;">${n.title||'Not'}</div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button onclick="editNote(${n.id})" style="border:none;background:var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:var(--text-light);">✏️</button>
+          <button onclick="deleteNote(${n.id})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;">🗑️</button>
+        </div>
+      </div>
+      <div style="font-size:0.85rem;color:var(--text);line-height:1.5;white-space:pre-wrap;">${preview}</div>
+      <div style="font-size:0.68rem;color:var(--text-light);margin-top:6px;">${ts}</div>
+    </div>`;
+  }).join('');
+}
+
 // ── UTILS ──
 function fmt(secs){const m=Math.floor(secs/60),s=secs%60;return`${pad(m)}:${pad(s)}`;}
 function pad(n){return String(n).padStart(2,'0');}
@@ -1037,6 +1246,7 @@ function pad(n){return String(n).padStart(2,'0');}
 // ── INIT ──
 initIntervalBtns();restoreSession();updateCountdown();renderFeedHistory();
 renderDiaperCd();renderDiaperHistory();renderSleepStatus();renderWeightHistory();
+renderFeverHistory();renderVaccineHistory();renderNotes();
 scheduleAlarm();
 initPWA();
 </script>
