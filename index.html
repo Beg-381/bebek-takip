@@ -687,6 +687,7 @@ function saveActive(){
 
 // ── COUNTDOWN ──
 function updateCountdown(){
+  clearInterval(window._cdi);
   const el=document.getElementById('countdown'),info=document.getElementById('nextSideInfo');
   if(!feedH.length){el.textContent='—';info.innerHTML='İlk emzirmeyi kaydedin';return;}
   const last=feedH[0],nextSide=last.startSide==='sol'?'Sağ':'Sol',nextTs=last.timestamp+alarmInterval*3600000;
@@ -696,7 +697,7 @@ function updateCountdown(){
     else{const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);el.textContent=h>0?`${h}s ${pad(m)}d`:`${pad(m)}:${pad(s)}`;}
     info.innerHTML=`Sıradaki taraf: <span>${nextSide}</span>`;
   }
-  refresh();clearInterval(window._cdi);window._cdi=setInterval(refresh,1000);
+  refresh();window._cdi=setInterval(refresh,1000);
 }
 function renderFeedHistory(){
   const el=document.getElementById('feedHistory');
