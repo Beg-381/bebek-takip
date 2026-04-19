@@ -477,6 +477,12 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 
 <!-- YEDEK -->
 <div class="page" id="page-yedek">
+  <div class="card" id="installCard">
+    <div class="clabel">📲 Uygulamayı Yükle</div>
+    <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Ana ekrana uygulama olarak ekle, tam ekran çalışır.</p>
+    <button id="installBtn" class="backup-btn" onclick="triggerInstall()" style="margin-bottom:8px;">📲 Uygulamayı Yükle</button>
+    <div id="installNote" style="font-size:0.78rem;color:var(--text-light);text-align:center;margin-top:6px;"></div>
+  </div>
   <div class="card">
     <div class="clabel">Veri Yedekle</div>
     <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Tüm verilerini JSON dosyası olarak indir. Telefon değişince buradan geri yükleyebilirsin.</p>
@@ -738,6 +744,24 @@ function showInstallBanner(type){
   document.body.appendChild(banner);
 }
 function doInstall(){if(window._installPrompt){window._installPrompt.prompt();window._installPrompt.userChoice.then(()=>{window._installPrompt=null;dismissInstall();});}}
+function triggerInstall(){
+  const note=document.getElementById('installNote');
+  if(window._installPrompt){
+    window._installPrompt.prompt();
+    window._installPrompt.userChoice.then(r=>{
+      window._installPrompt=null;
+      if(r.outcome==='accepted'){note.textContent='✅ Uygulama yüklendi!';}
+      else{note.textContent='İptal edildi.';}
+    });
+  } else {
+    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS){
+      note.innerHTML='Safari\'de aç → <strong>Paylaş</strong> → <strong>Ana Ekrana Ekle</strong>';
+    } else {
+      note.textContent='Tarayıcı menüsünden "Ana ekrana ekle" seçeneğini kullan.';
+    }
+  }
+}
 function dismissInstall(){const b=document.getElementById('installBanner');if(b)b.remove();localStorage.setItem('bb_install_dismissed','1');}
 
 // ── FEED SESSION ──
