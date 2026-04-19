@@ -413,6 +413,7 @@ function setInterval_(hours) {
   document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
   const map = {1.5:'iv1', 2:'iv2', 3:'iv3'};
   document.getElementById(map[hours]).classList.add('active');
+  updateCountdown();
   scheduleAlarm();
 }
 
@@ -649,7 +650,7 @@ function saveActive(){
 function updateCountdown(){
   const el=document.getElementById('countdown'),info=document.getElementById('nextSideInfo');
   if(!feedH.length){el.textContent='—';info.innerHTML='İlk emzirmeyi kaydedin';return;}
-  const last=feedH[0],nextSide=last.startSide==='sol'?'Sağ':'Sol',nextTs=last.timestamp+2*3600000;
+  const last=feedH[0],nextSide=last.startSide==='sol'?'Sağ':'Sol',nextTs=last.timestamp+alarmInterval*3600000;
   function refresh(){
     const diff=nextTs-Date.now();
     if(diff<=0){el.textContent='Şimdi!';}
