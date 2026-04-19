@@ -477,12 +477,12 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 
 <!-- YEDEK -->
 <div class="page" id="page-yedek">
-  <div class="card" id="installCard">
-    <div class="clabel">📲 Uygulamayı Yükle</div>
-    <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Ana ekrana uygulama olarak ekle, tam ekran çalışır.</p>
-    <button id="installBtn" class="backup-btn" onclick="triggerInstall()" style="margin-bottom:8px;">📲 Uygulamayı Yükle</button>
-    <div id="installNote" style="font-size:0.78rem;color:var(--text-light);text-align:center;margin-top:6px;"></div>
+  <div class="card">
+    <div class="clabel">🔔 Bildirimler</div>
+    <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Uygulama kapalıyken bile emzirme vakti gelince bildirim al!</p>
+    <div id="notifBanner" class="notif-banner" onclick="requestNotif()" style="cursor:pointer;">🔔 Bildirim aç — uygulama kapalıyken de hatırlatır</div>
   </div>
+
   <div class="card">
     <div class="clabel">Veri Yedekle</div>
     <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Tüm verilerini JSON dosyası olarak indir. Telefon değişince buradan geri yükleyebilirsin.</p>
@@ -698,10 +698,74 @@ function dismissAlarm() {
   scheduleAlarm();
 }
 
-function checkNotif(){ /* artık kullanılmıyor */ }
-function requestNotif(){ /* artık kullanılmıyor */ }
-function subscribePush(){ /* artık kullanılmıyor */ }
-function scheduleNotif(){ scheduleAlarm(); }
+const VAPID_PUBLIC = 'BEgrAeQEDims6YsEym48lN9SlbgRmxXmAJjGR3uQBM0SkUv6Ha8fA3tI-K3V0DtyDO-M-E4qi4YD21Ln8CuK22E';
+const API_BASE = 'https://bebek-takip.ggroupang.workers.dev';
+
+async function requestNotif() {
+  if (!('Notification' in window)) { alert('Tarayıcın bildirim desteklemiyor'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { alert('Bildirim izni verilmedi'); return; }
+  await subscribePush();
+}
+
+async function subscribePush() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
+    });
+    pushSubscription = sub.toJSON();
+    localStorage.setItem('bb_push_sub', JSON.stringify(pushSubscription));
+    await fetch(API_BASE + '/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: pushSubscription })
+    });
+    updateNotifBanner(true);
+  } catch(e) {
+    console.error('Push subscribe error:', e);
+  }
+}
+
+async function scheduleNotif() {
+  scheduleAlarm();
+  if (!pushSubscription || !feedH.length) return;
+  const last = feedH[0];
+  const nextSide = last.startSide === 'sol' ? 'Sağ' : 'Sol';
+  const nextTs = last.timestamp + alarmInterval * 3600000;
+  const delay = Math.max(0, nextTs - Date.now());
+  setTimeout(async () => {
+    await fetch(API_BASE + '/api/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: pushSubscription, nextSide })
+    });
+  }, delay);
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+function updateNotifBanner(granted) {
+  notifGranted = granted;
+  const b = document.getElementById('notifBanner');
+  if (!b) return;
+  if (granted) {
+    b.className = 'notif-banner granted';
+    b.innerHTML = '✅ Bildirimler aktif! Uygulama kapalıyken de gelecek.';
+  } else {
+    b.innerHTML = '🔔 Bildirim aç — uygulama kapalıyken de hatırlatır';
+  }
+}
+
+function checkNotif() {
+  if (Notification.permission === 'granted' && pushSubscription) updateNotifBanner(true);
+}
 
 // ── PWA ──
 function initPWA(){
@@ -716,6 +780,7 @@ function initPWA(){
         if(savedSub) {
           try { pushSubscription = JSON.parse(savedSub); } catch{}
         }
+        checkNotif();
       })
       .catch(e => console.log('SW error:', e));
   }
