@@ -817,7 +817,7 @@ function updateCountdown(){
 function renderFeedHistory(){
   const el=document.getElementById('feedHistory');
   if(!feedH.length){el.innerHTML='<div class="history-empty">Henüz kayıt yok 🌸</div>';return;}
-  el.innerHTML=feedH.slice(0,10).map(e=>{
+  el.innerHTML=feedH.slice(0,10).map((e,i)=>{
     const d=new Date(e.timestamp);
     const ts=d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
     const icon=e.startSide==='sol'?'👈':'👉',lbl=e.startSide==='sol'?'Sol başladı':'Sağ başladı';
@@ -919,7 +919,7 @@ function renderDiaperCd(){
 function renderDiaperHistory(){
   const el=document.getElementById('diaperHistory');
   if(!diaperH.length){el.innerHTML='<div class="history-empty">Henüz kayıt yok</div>';return;}
-  el.innerHTML=diaperH.slice(0,10).map(e=>{
+  el.innerHTML=diaperH.slice(0,10).map((e,i)=>{
     const d=new Date(e.timestamp),ts=d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
     return `<div class="hi"><div class="hbadge diaper">${e.type==='ıslak'?'💧':'💩'}</div><div class="hinfo"><div class="hside">${e.type==='ıslak'?'Islak bez':'Kirli bez'}</div><div class="htime">${ts}</div></div><button onclick="deleteDiaper(${i})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;padding:0 4px;">🗑️</button></div>`;
   }).join('');
@@ -960,15 +960,20 @@ function saveWeight(type){
   sv(type==='kilo'?'bb_weight':'bb_height',arr);
   document.getElementById(id).value='';renderWeightHistory();
 }
-function renderWeightHistory(){renderMeasure('weightHistory',weightH,'kg');renderMeasure('heightHistory',heightH,'cm');}
-function renderMeasure(elId,arr,unit){
+function renderWeightHistory(){renderMeasure('weightHistory',weightH,'kg','kilo');renderMeasure('heightHistory',heightH,'cm','boy');}
+function renderMeasure(elId,arr,unit,type){
   const el=document.getElementById(elId);
   if(!arr.length){el.innerHTML='<div class="history-empty">Henüz kayıt yok</div>';return;}
   el.innerHTML=arr.slice(0,10).map((e,i)=>{
     const ts=new Date(e.timestamp).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'});
     let diff='';if(i<arr.length-1){const delta=e.val-arr[i+1].val,cls=delta>=0?'up':'dn';diff=`<span class="wdiff ${cls}">${delta>0?'+':''}${delta.toFixed(2)} ${unit}</span>`;}
-    return `<div class="witem"><div><div class="wval">${e.val} ${unit}</div><div class="wdate">${ts}</div></div>${diff}</div>`;
+    return `<div class="witem"><div><div class="wval">${e.val} ${unit}</div><div class="wdate">${ts}</div></div>${diff}<button onclick="deleteMeasure('${type}',${i})" style="border:none;background:none;color:var(--text-light);font-size:1rem;cursor:pointer;padding:0 4px;">🗑️</button></div>`;
   }).join('');
+}
+function deleteMeasure(type,i){
+  if(type==='kilo'){weightH.splice(i,1);sv('bb_weight',weightH);}
+  else{heightH.splice(i,1);sv('bb_height',heightH);}
+  renderWeightHistory();
 }
 
 // ── ANALİZ ──
@@ -1098,7 +1103,7 @@ function importData(event){
       weightH=data.weight||[];heightH=data.height||[];feverH=data.fever||[];vaccineH=data.vaccine||[];
       sv('bb_fever',feverH);sv('bb_vaccine',vaccineH);
       sv('bb_feed',feedH);sv('bb_diaper',diaperH);sv('bb_sleep',sleepH);
-      sv('bb_weight',weightH);sv('bb_height',heightH);
+      sv('bb_weight',weightH);sv('bb_height',heightH);sv('bb_notes',notesH);
       renderFeedHistory();renderDiaperCd();renderSleepStatus();renderWeightHistory();updateCountdown();
       msg.textContent=`✅ Geri yüklendi! ${feedH.length} emzirme, ${diaperH.length} bez, ${sleepH.length} uyku kaydı`;
       msg.style.color='var(--green-dark)';
