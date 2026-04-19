@@ -6,3 +6,6 @@
   [headers.values]
     Service-Worker-Allowed = "/"
     Cache-Control = "no-cache"
+
+[[plugins]]
+package = "@netlify/plugin-functions-install-core"
