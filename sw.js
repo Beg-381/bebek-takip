@@ -1,32 +1,34 @@
-const CACHE = 'bebek-v2';
+const CACHE = 'bebek-v3';
 const ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));
   self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => Promise.all(
       keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-    ))
+    )).then(() => clients.claim())
   );
-  clients.claim();
 });
 
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-      if (res && res.status === 200 && e.request.method === 'GET') {
-        caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-      }
-      return res;
-    }).catch(() => caches.match('/index.html')))
+    caches.match(e.request).then(cached => {
+      const fetched = fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        }
+        return res;
+      }).catch(() => cached);
+      return cached || fetched;
+    })
   );
 });
 
-// ── PUSH BİLDİRİMİ ──
 self.addEventListener('push', e => {
   let data = { title: '🤱 Emzirme Vakti!', body: 'Bebek seni bekliyor!', icon: '/icon-192.png' };
   try { data = { ...data, ...e.data.json() }; } catch {}
@@ -34,16 +36,13 @@ self.addEventListener('push', e => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: data.icon,
-      badge: data.icon,
-      tag: data.tag || 'emzirme',
+      tag: 'emzirme',
       renotify: true,
-      vibrate: [200, 100, 200],
-      data: data.data || {}
+      vibrate: [200, 100, 200]
     })
   );
 });
 
-// Bildirime tıklanınca uygulamayı aç
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(
@@ -54,20 +53,4 @@ self.addEventListener('notificationclick', e => {
       return clients.openWindow('/');
     })
   );
-});
-
-// Client'tan zamanlı bildirim mesajı al
-self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'SCHEDULE_NOTIFICATION') {
-    const { delayMs, title, body } = e.data;
-    setTimeout(() => {
-      self.registration.showNotification(title || '🤱 Emzirme Vakti!', {
-        body: body || 'Bebek seni bekliyor!',
-        icon: '/icon-192.png',
-        tag: 'emzirme',
-        renotify: true,
-        vibrate: [200, 100, 200]
-      });
-    }, delayMs || 0);
-  }
 });
