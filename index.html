@@ -701,9 +701,8 @@ function scheduleNotif(){ scheduleAlarm(); }
 function initPWA(){
   // Service Worker kaydet
   if('serviceWorker' in navigator){
-    const swPath = location.hostname==='localhost'?'/sw.js':'/bebek-takip/sw.js';
-    const swScope = location.hostname==='localhost'?'/':'/bebek-takip/';
-    navigator.serviceWorker.register(swPath, {scope:swScope})
+    const base = location.pathname.replace(/\/[^/]*$/, '/');
+    navigator.serviceWorker.register(base + 'sw.js', {scope: base})
       .then(reg => {
         swRegistration = reg;
         // Mevcut push aboneliğini kontrol et
