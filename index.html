@@ -187,6 +187,10 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
       <button class="interval-btn" onclick="setInterval_(2)" id="iv2">2 Saat</button>
       <button class="interval-btn" onclick="setInterval_(3)" id="iv3">3 Saat</button>
     </div>
+    <div style="text-align:right;margin-top:8px;">
+      <button onclick="setTimeout(()=>triggerAlarm(feedH.length&&feedH[0].startSide==='sol'?'Sağ':'Sol',Date.now()),10000)" style="border:none;background:rgba(255,152,0,0.12);color:#e65100;border-radius:8px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.68rem;cursor:pointer;">🧪 10sn test</button>
+    </div>
+    </div>
   </div>
   <!-- ALARM OVERLAY -->
   <div id="alarmOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(224,112,144,0.97);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
@@ -500,6 +504,7 @@ function triggerAlarm(nextSide, lastTs) {
 
   // Ekran uyarısı
   const overlay = document.getElementById('alarmOverlay');
+  overlay.style.visibility = 'visible';
   overlay.style.display = 'flex';
   document.getElementById('alarmSideText').textContent = `Sıradaki: ${nextSide === 'sol' ? 'Sol 👈' : 'Sag 👉'} taraf`;
   const h = Math.floor(alarmInterval);
@@ -513,6 +518,7 @@ function triggerAlarm(nextSide, lastTs) {
 function dismissAlarm() {
   const overlay = document.getElementById('alarmOverlay');
   overlay.style.display = 'none';
+  overlay.style.visibility = 'hidden';
   scheduleAlarm();
 }
 
