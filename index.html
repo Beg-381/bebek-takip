@@ -497,6 +497,67 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
   </div>
 </div>
 
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB2WWcnLR3ROyJEZ-mRXBoYSyhViNv9L_I",
+  authDomain: "alisa-36e99.firebaseapp.com",
+  projectId: "alisa-36e99",
+  storageBucket: "alisa-36e99.firebasestorage.app",
+  messagingSenderId: "649957485100",
+  appId: "1:649957485100:web:23b3372061650f9c0e7f89"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const DATA_DOC = doc(db, "bebek", "ortak");
+
+// Firestore'a yaz
+window.fsSet = async function(data) {
+  try { await setDoc(DATA_DOC, data, {merge: true}); } catch(e) { console.error('FS write:', e); }
+};
+
+// Değişiklikleri dinle (karşı taraftan gelen güncellemeler)
+let _ignoreNext = false;
+onSnapshot(DATA_DOC, (snap) => {
+  if (!snap.exists()) return;
+  if (_ignoreNext) { _ignoreNext = false; return; }
+  const d = snap.data();
+  if (d.feed)    { window.feedH    = d.feed;    localStorage.setItem('bb_feed',    JSON.stringify(d.feed));    }
+  if (d.diaper)  { window.diaperH  = d.diaper;  localStorage.setItem('bb_diaper',  JSON.stringify(d.diaper));  }
+  if (d.sleep)   { window.sleepH   = d.sleep;   localStorage.setItem('bb_sleep',   JSON.stringify(d.sleep));   }
+  if (d.weight)  { window.weightH  = d.weight;  localStorage.setItem('bb_weight',  JSON.stringify(d.weight));  }
+  if (d.height)  { window.heightH  = d.height;  localStorage.setItem('bb_height',  JSON.stringify(d.height));  }
+  if (d.fever)   { window.feverH   = d.fever;   localStorage.setItem('bb_fever',   JSON.stringify(d.fever));   }
+  if (d.vaccine) { window.vaccineH = d.vaccine; localStorage.setItem('bb_vaccine', JSON.stringify(d.vaccine)); }
+  if (d.notes)   { window.notesH   = d.notes;   localStorage.setItem('bb_notes',   JSON.stringify(d.notes));   }
+  // UI güncelle
+  if (typeof updateCountdown === 'function') {
+    updateCountdown(); renderFeedHistory(); renderDiaperCd(); renderDiaperHistory();
+    renderSleepStatus(); renderWeightHistory(); renderFeverHistory(); renderVaccineHistory(); renderNotes();
+    scheduleAlarm();
+  }
+});
+
+// İlk yükleme: Firestore'dan çek, yoksa localStorage'ı yükle
+getDoc(DATA_DOC).then(snap => {
+  if (snap.exists()) {
+    const d = snap.data();
+    if (d.feed)    { window.feedH    = d.feed;    localStorage.setItem('bb_feed',    JSON.stringify(d.feed));    }
+    if (d.diaper)  { window.diaperH  = d.diaper;  localStorage.setItem('bb_diaper',  JSON.stringify(d.diaper));  }
+    if (d.sleep)   { window.sleepH   = d.sleep;   localStorage.setItem('bb_sleep',   JSON.stringify(d.sleep));   }
+    if (d.weight)  { window.weightH  = d.weight;  localStorage.setItem('bb_weight',  JSON.stringify(d.weight));  }
+    if (d.height)  { window.heightH  = d.height;  localStorage.setItem('bb_height',  JSON.stringify(d.height));  }
+    if (d.fever)   { window.feverH   = d.fever;   localStorage.setItem('bb_fever',   JSON.stringify(d.fever));   }
+    if (d.vaccine) { window.vaccineH = d.vaccine; localStorage.setItem('bb_vaccine', JSON.stringify(d.vaccine)); }
+    if (d.notes)   { window.notesH   = d.notes;   localStorage.setItem('bb_notes',   JSON.stringify(d.notes));   }
+  }
+});
+</script>
+
 <script>
 // ── DATA ──
 let feedH   = JSON.parse(localStorage.getItem('bb_feed')   || '[]');
@@ -507,7 +568,13 @@ let heightH = JSON.parse(localStorage.getItem('bb_height') || '[]');
 let feverH  = JSON.parse(localStorage.getItem('bb_fever')  || '[]');
 let vaccineH= JSON.parse(localStorage.getItem('bb_vaccine')|| '[]');
 let notesH  = JSON.parse(localStorage.getItem('bb_notes')  || '[]');
-function sv(k,d){localStorage.setItem(k,JSON.stringify(d));}
+
+function sv(k,d){
+  localStorage.setItem(k,JSON.stringify(d));
+  // Firestore'a da yaz
+  const keyMap = {bb_feed:'feed',bb_diaper:'diaper',bb_sleep:'sleep',bb_weight:'weight',bb_height:'height',bb_fever:'fever',bb_vaccine:'vaccine',bb_notes:'notes'};
+  if(window.fsSet && keyMap[k]) window.fsSet({[keyMap[k]]:d});
+}
 
 // ── DARK MODE ──
 if(localStorage.getItem('bb_dark')==='1'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('darkBtn').textContent='☀️';}
