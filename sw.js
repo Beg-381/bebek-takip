@@ -1,9 +1,13 @@
-const CACHE = 'bebek-v4';
-const ASSETS = ['/bebek-takip/', '/bebek-takip/index.html'];
+const CACHE = 'bebek-v5';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll([
+      self.registration.scope,
+      self.registration.scope + 'index.html'
+    ]).catch(() => {}))
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -30,7 +34,7 @@ self.addEventListener('fetch', e => {
 });
 
 self.addEventListener('push', e => {
-  let data = { title: '🤱 Emzirme Vakti!', body: 'Bebek seni bekliyor!', icon: '/bebek-takip/icon-192.png' };
+  let data = { title: '🤱 Emzirme Vakti!', body: 'Bebek seni bekliyor!', icon: self.registration.scope + 'icon-192.png' };
   try { data = { ...data, ...e.data.json() }; } catch {}
   e.waitUntil(
     self.registration.showNotification(data.title, {
@@ -50,7 +54,7 @@ self.addEventListener('notificationclick', e => {
       for (const c of list) {
         if (c.url.includes(self.location.origin)) return c.focus();
       }
-      return clients.openWindow('/bebek-takip/');
+      return clients.openWindow(self.registration.scope);
     })
   );
 });
