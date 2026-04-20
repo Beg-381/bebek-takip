@@ -92,6 +92,11 @@ export default {
       return new Response(null, { status: 200, headers: cors() });
     }
 
+    // /index.html -> / yönlendir
+    if (url.pathname === '/index.html') {
+      return Response.redirect('https://bebek-takip.ggroupang.workers.dev/', 301);
+    }
+
     // FCM token kaydet
     if (url.pathname === '/api/register-token' && request.method === 'POST') {
       try {
