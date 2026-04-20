@@ -1,5 +1,4 @@
-const CACHE = 'bebek-v5';
-
+const CACHE = 'bebek-v10';
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
@@ -9,7 +8,6 @@ self.addEventListener('install', e => {
     ]).catch(() => {}))
   );
 });
-
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => Promise.all(
@@ -17,22 +15,18 @@ self.addEventListener('activate', e => {
     )).then(() => clients.claim())
   );
 });
-
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fetched = fetch(e.request).then(res => {
-        if (res && res.status === 200) {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || fetched;
-    })
+    fetch(e.request).then(res => {
+      if (res && res.status === 200) {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+      }
+      return res;
+    }).catch(() => caches.match(e.request))
   );
 });
-
 self.addEventListener('push', e => {
   let data = { title: '🤱 Emzirme Vakti!', body: 'Bebek seni bekliyor!', icon: self.registration.scope + 'icon-192.png' };
   try { data = { ...data, ...e.data.json() }; } catch {}
@@ -46,7 +40,6 @@ self.addEventListener('push', e => {
     })
   );
 });
-
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(
