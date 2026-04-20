@@ -479,8 +479,8 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 <div class="page" id="page-yedek">
   <div class="card">
     <div class="clabel">🔔 Bildirimler</div>
-    <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Uygulama kapalıyken bile emzirme vakti gelince bildirim al!</p>
-    <div id="notifBanner" class="notif-banner" onclick="requestNotif()" style="cursor:pointer;">🔔 Bildirim aç — uygulama kapalıyken de hatırlatır</div>
+    <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Uygulama kapalıyken bile emzirme vakti gelince bildirim al! Emzirme kaydettikten sonra otomatik aktif olur.</p>
+    <div id="notifBanner" class="notif-banner granted">✅ Bildirimler aktif! Emzirme kaydedince Cloudflare hatırlatır.</div>
   </div>
 
   <div class="card">
@@ -730,18 +730,23 @@ async function subscribePush() {
 
 async function scheduleNotif() {
   scheduleAlarm();
-  if (!pushSubscription || !feedH.length) return;
+  if (!feedH.length) return;
   const last = feedH[0];
   const nextSide = last.startSide === 'sol' ? 'Sağ' : 'Sol';
-  const nextTs = last.timestamp + alarmInterval * 3600000;
-  const delay = Math.max(0, nextTs - Date.now());
-  setTimeout(async () => {
-    await fetch(API_BASE + '/api/send-push', {
+  // Cloudflare Cron'a son emzirme zamanını bildir
+  try {
+    await fetch(API_BASE + '/api/update-feed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription: pushSubscription, nextSide })
+      body: JSON.stringify({
+        lastFeedTime: last.timestamp,
+        nextSide: nextSide,
+        intervalHours: alarmInterval
+      })
     });
-  }, delay);
+  } catch(e) {
+    console.log('update-feed error:', e);
+  }
 }
 
 function urlBase64ToUint8Array(base64String) {
