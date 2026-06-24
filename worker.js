@@ -275,13 +275,87 @@ export default {
         return new Response(JSON.stringify({ error: 'Yetkisiz istek' }), { status: 401, headers: CORS });
       }
       try {
-        const { birthDate, vaccineNames } = await request.json();
+        const { birthDate, vaccineNames, upcoming } = await request.json();
         await env.BEBEK_KV.put('vaccine_reminders', JSON.stringify({
           birthDate: Number(birthDate) || null,
           vaccineNames: vaccineNames || [],
+          upcoming: upcoming || [],
           updatedAt: Date.now()
         }), { expirationTtl: 60 * 60 * 24 * 90 }); // 90 gün
         return new Response(JSON.stringify({ ok: true }), { headers: CORS });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: CORS });
+      }
+    }
+
+    // ── Aşı hatırlatma testi ──
+    if (url.pathname === '/api/test-vax-reminder' && request.method === 'POST') {
+      if (!checkSecret(request, env)) {
+        return new Response(JSON.stringify({ error: 'Yetkisiz istek' }), { status: 401, headers: CORS });
+      }
+      try {
+        const raw = await env.BEBEK_KV.get('fcm_tokens');
+        const tokens = raw ? JSON.parse(raw) : [];
+        if (!tokens.length) return new Response(JSON.stringify({ error: 'Token yok' }), { status: 404, headers: CORS });
+
+        const vaxRaw = await env.BEBEK_KV.get('vaccine_reminders');
+        if (!vaxRaw) return new Response(JSON.stringify({ error: 'Aşı verisi yok. Önce doğum tarihi ve aşı kaydı yapın.' }), { status: 404, headers: CORS });
+
+        const vData = JSON.parse(vaxRaw);
+        const birthDate = vData.birthDate;
+        const doneVaccines = vData.vaccineNames || [];
+        const now = Date.now();
+
+        if (!birthDate) return new Response(JSON.stringify({ error: 'Doğum tarihi yok' }), { status: 400, headers: CORS });
+
+        let sent = [];
+
+        // 1. Özel aşı serilerini kontrol et (upcoming)
+        const upcoming = vData.upcoming || [];
+        for (const u of upcoming) {
+          if (!u.plannedDate) continue;
+          const daysUntil = Math.floor((u.plannedDate - now) / 86400000);
+          if (daysUntil <= 7 && daysUntil > 0) {
+            let title = '⏰ Yaklasan Asi';
+            if (daysUntil <= 1) title = '🔔 Yarin Asi Var!';
+            else if (daysUntil <= 2) title = '⚠️ 2 Gun Kaldi!';
+            const body = u.name + ' (' + u.dose + ') — ' + daysUntil + ' gun sonra! 💉';
+            const results = await Promise.all(tokens.map(t => sendFCM(t, title, body, env, 'vax')));
+            if (results.some(r => r.ok)) sent.push({ name: u.name, dose: u.dose, daysUntil });
+          }
+        }
+
+        // 2. Ulusal takvimi kontrol et
+        const SCHEDULE = [
+          { month:0, name:'Hepatit B', dose:'1. Doz' }, { month:1, name:'Hepatit B', dose:'2. Doz' },
+          { month:2, name:'Verem (BCG)', dose:'Tek Doz' }, { month:2, name:'DBT-İPA-Hib', dose:'1. Doz' },
+          { month:2, name:'Pnömokok (KPA)', dose:'1. Doz' }, { month:4, name:'DBT-İPA-Hib', dose:'2. Doz' },
+          { month:4, name:'Pnömokok (KPA)', dose:'2. Doz' }, { month:6, name:'DBT-İPA-Hib', dose:'3. Doz' },
+          { month:6, name:'Hepatit B', dose:'3. Doz' }, { month:6, name:'OPA', dose:'1. Doz' },
+          { month:6, name:'Pnömokok (KPA)', dose:'3. Doz' }, { month:12, name:'KKK', dose:'1. Doz' },
+          { month:12, name:'Pnömokok (KPA)', dose:'Rapel' }, { month:12, name:'Suçiçeği', dose:'1. Doz' },
+          { month:18, name:'DBT-İPA-Hib', dose:'Rapel' }, { month:18, name:'OPA', dose:'2. Doz' },
+          { month:18, name:'Hepatit A', dose:'1. Doz' }, { month:24, name:'Hepatit A', dose:'2. Doz' }
+        ];
+
+        for (const s of SCHEDULE) {
+          const alreadyDone = doneVaccines.some(v =>
+            (v.name||'').toLowerCase().includes(s.name.toLowerCase()) &&
+            (v.dose||'').toLowerCase() === s.dose.toLowerCase()
+          );
+          if (alreadyDone) continue;
+          const daysUntil = Math.floor((birthDate + s.month * 30.44 * 86400000 - now) / 86400000);
+          if (daysUntil <= 7 && daysUntil > 0) {
+            let title = '⏰ Yaklaşan Aşı';
+            if (daysUntil <= 1) title = '🔔 Yarın Aşı Var!';
+            else if (daysUntil <= 2) title = '⚠️ 2 Gün Kaldı!';
+            const body = s.name + ' (' + s.dose + ') — ' + daysUntil + ' gün sonra! 💉';
+            const results = await Promise.all(tokens.map(t => sendFCM(t, title, body, env, 'vax')));
+            if (results.some(r => r.ok)) sent.push({ name: s.name, dose: s.dose, daysUntil });
+          }
+        }
+
+        return new Response(JSON.stringify({ ok: true, sent: sent, total: tokens.length }), { headers: CORS });
       } catch (e) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: CORS });
       }

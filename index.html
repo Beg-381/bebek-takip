@@ -1394,7 +1394,7 @@ for(var gname in groups){
   html+='</div></div>';
 }
 tl.innerHTML=html;var items=tl.querySelectorAll(".vti");for(var j=0;j<items.length;j++){(function(vti,sched){if(sched.status==="pending"){vti.style.cursor="pointer";vti.addEventListener("click",function(){quickMarkVaccine(sched.name,sched.dose);});}})(items[j],schedule[j]);}}
-function syncVaccineReminders(){if(!birthDate)return;var names=vaccineH.map(function(v){return{name:v.name,dose:v.dose};});try{fetch(window.API_URL+"/api/update-vaccine-reminders",{method:"POST",headers:{"Content-Type":"application/json","X-API-Secret":window.API_SECRET},body:JSON.stringify({birthDate:birthDate,vaccineNames:names})}).catch(function(){});}catch(e){}}
+function syncVaccineReminders(){if(!birthDate)return;var names=vaccineH.map(function(v){return{name:v.name,dose:v.dose};});var upcoming=[];if(typeof customVaccineSeries!=="undefined"){for(var i=0;i<customVaccineSeries.length;i++){var cs=customVaccineSeries[i];for(var j=0;j<cs.doses.length;j++){var d=cs.doses[j];var done=vaccineH.some(function(v){return normalizeVaxName(v.name)===normalizeVaxName(cs.name)&&normalizeDose(v.dose)===normalizeDose(d.dose);});if(!done)upcoming.push({name:cs.name,dose:d.dose,plannedDate:d.plannedDate});}}}try{fetch(window.API_URL+"/api/update-vaccine-reminders",{method:"POST",headers:{"Content-Type":"application/json","X-API-Secret":window.API_SECRET},body:JSON.stringify({birthDate:birthDate,vaccineNames:names,upcoming:upcoming})}).catch(function(){});}catch(e){}}
 
 // ── OZEL ASI SERISI ──
 var customVaccineSeries=JSON.parse(localStorage.getItem("bb_custom_vax")||"[]");window.customVaccineSeries=customVaccineSeries;
