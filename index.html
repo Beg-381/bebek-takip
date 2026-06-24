@@ -584,6 +584,9 @@ window.fsWrite = async function(key, data) {
   if (!keyMap[key]) return;
   try { await setDoc(DATA_DOC, {[keyMap[key]]: data}, {merge: true}); } catch(e) { console.error('FS:', e); }
 };
+
+// localStorage verilerini Firestore'a it
+setTimeout(function(){['bb_feed','bb_diaper','bb_sleep','bb_weight','bb_height','bb_fever','bb_vaccine','bb_notes','bb_custom_vax'].forEach(function(k){var d=[];try{d=JSON.parse(localStorage.getItem(k)||'[]');}catch(e){}if(d.length)window.fsWrite(k,d);});},2000);
 </script>
 
 <script>
@@ -1282,10 +1285,10 @@ function importData(event){
       if(!data.version||!data.feed){msg.textContent='❌ Geçersiz dosya formatı';msg.style.color='var(--rose-dark)';return;}
       if(!confirm(`Yedek bulundu (${new Date(data.exportedAt).toLocaleDateString('tr-TR')}). Mevcut veriler silinecek. Devam?`)){event.target.value='';return;}
       feedH=data.feed||[];diaperH=data.diaper||[];sleepH=data.sleep||[];
-      weightH=data.weight||[];heightH=data.height||[];feverH=data.fever||[];vaccineH=data.vaccine||[];
+      weightH=data.weight||[];heightH=data.height||[];feverH=data.fever||[];vaccineH=data.vaccine||[];if(data.customVax){customVaccineSeries=data.customVax;localStorage.setItem('bb_custom_vax',JSON.stringify(data.customVax));}
       sv('bb_fever',feverH);sv('bb_vaccine',vaccineH);
       sv('bb_feed',feedH);sv('bb_diaper',diaperH);sv('bb_sleep',sleepH);
-      sv('bb_weight',weightH);sv('bb_height',heightH);sv('bb_notes',notesH);
+      sv('bb_weight',weightH);sv('bb_height',heightH);sv('bb_notes',notesH);sv('bb_custom_vax',customVaccineSeries);if(data.birthDate){birthDate=data.birthDate;window.birthDate=birthDate;localStorage.setItem('bb_birth',String(data.birthDate));}
       renderFeedHistory();renderDiaperCd();renderSleepStatus();renderWeightHistory();updateCountdown();
       msg.textContent=`✅ Geri yüklendi! ${feedH.length} emzirme, ${diaperH.length} bez, ${sleepH.length} uyku kaydı`;
       msg.style.color='var(--green-dark)';
@@ -1297,7 +1300,7 @@ function importData(event){
 }
 
 function renderStorageInfo(){
-  const keys=['bb_feed','bb_diaper','bb_sleep','bb_weight','bb_height','bb_fever','bb_vaccine','bb_notes'];
+  const keys=['bb_feed','bb_diaper','bb_sleep','bb_weight','bb_height','bb_fever','bb_vaccine','bb_notes','bb_custom_vax'];
   const labels={bb_feed:'Emzirme',bb_diaper:'Bez',bb_sleep:'Uyku',bb_weight:'Kilo',bb_height:'Boy',bb_fever:'Ateş',bb_vaccine:'İğne',bb_notes:'Notlar'};
   const counts={bb_feed:feedH.length,bb_diaper:diaperH.length,bb_sleep:sleepH.length,bb_weight:weightH.length,bb_height:heightH.length,bb_fever:feverH.length,bb_vaccine:vaccineH.length,bb_notes:notesH.length};
   let totalBytes=0;
