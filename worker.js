@@ -288,6 +288,14 @@ export default {
       }
     }
 
+    // ── KV Debug ──
+    if (url.pathname === '/api/kv-debug' && request.method === 'GET') {
+      if (!checkSecret(request, env)) return new Response(JSON.stringify({ error: 'Yetkisiz' }), { status: 401, headers: CORS });
+      const raw = await env.BEBEK_KV.get('vaccine_reminders');
+      const data = raw ? JSON.parse(raw) : null;
+      return new Response(JSON.stringify({ hasData: !!data, birthDate: data?.birthDate, upcoming: (data?.upcoming||[]).map(u=>({name:u.name,dose:u.dose,planned:new Date(u.plannedDate).toISOString().slice(0,10)})), vaccineNames: data?.vaccineNames||[] }), { headers: CORS });
+    }
+
     // ── Aşı hatırlatma testi ──
     if (url.pathname === '/api/test-vax-reminder' && request.method === 'POST') {
       if (!checkSecret(request, env)) {

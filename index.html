@@ -549,7 +549,11 @@ function applyData(d) {
   const map = {feed:'bb_feed',diaper:'bb_diaper',sleep:'bb_sleep',weight:'bb_weight',height:'bb_height',fever:'bb_fever',vaccine:'bb_vaccine',notes:'bb_notes',customVax:'bb_custom_vax'};
   const varMap = {feed:'feedH',diaper:'diaperH',sleep:'sleepH',weight:'weightH',height:'heightH',fever:'feverH',vaccine:'vaccineH',notes:'notesH',customVax:'customVaccineSeries'};
   Object.keys(map).forEach(k => {
-    if (d[k] && (typeof d[k] !== 'object' || (Array.isArray(d[k]) ? d[k].length > 0 : true))) {
+    if (d[k] && Array.isArray(d[k]) && d[k].length > 0) {
+      // Remote veriyi oldugu gibi al (local'da silinen geri gelmesin)
+      window[varMap[k]] = d[k];
+      localStorage.setItem(map[k], JSON.stringify(d[k]));
+    } else if (d[k] && !Array.isArray(d[k])) {
       window[varMap[k]] = d[k];
       localStorage.setItem(map[k], JSON.stringify(d[k]));
     }
@@ -585,7 +589,7 @@ onSnapshot(DATA_DOC, snap => {
 });
 
 // sv() çağrıldığında Firestore'a yaz (merge ile)
-window.fsWrite = async function(key, data) {
+window._realFsWrite = async function(key, data) {
   const keyMap = {bb_feed:'feed',bb_diaper:'diaper',bb_sleep:'sleep',bb_weight:'weight',bb_height:'height',bb_fever:'fever',bb_vaccine:'vaccine',bb_notes:'notes',bb_custom_vax:'customVax'};
   if (!keyMap[key]) return;
   try {
@@ -595,6 +599,8 @@ window.fsWrite = async function(key, data) {
     await setDoc(DATA_DOC, {[keyMap[key]]: merged}, {merge: true});
   } catch(e) { console.error('FS:', e); }
 };
+// Bekleyen kuyrugu bosalt
+while(window._fsQueue&&window._fsQueue.length){var item=window._fsQueue.shift();window._realFsWrite(item.k,item.d);}
 </script>
 
 <script>
@@ -608,10 +614,10 @@ var feverH  = JSON.parse(localStorage.getItem('bb_fever')  || '[]');
 var vaccineH= JSON.parse(localStorage.getItem('bb_vaccine')|| '[]');
 var notesH  = JSON.parse(localStorage.getItem('bb_notes')  || '[]');
 
-function sv(k,d){
-  localStorage.setItem(k,JSON.stringify(d));
-  if(window.fsWrite) window.fsWrite(k, d);
-}
+// fsWrite stub - modul script yuklenene kadar kuyruga alir
+window._fsQueue=[];
+window.fsWrite=function(k,d){window._fsQueue.push({k:k,d:d});if(window._realFsWrite){while(window._fsQueue.length){var item=window._fsQueue.shift();window._realFsWrite(item.k,item.d);}}};
+function sv(k,d){try{localStorage.setItem(k,JSON.stringify(d));}catch(e){}window.fsWrite(k,d);if(window._realFsWrite){window._realFsWrite(k,d);}}
 
 // ── DARK MODE ──
 if(localStorage.getItem('bb_dark')==='1'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('darkBtn').textContent='☀️';}
@@ -1272,7 +1278,7 @@ function exportData(){
   const data={
     version:1,
     exportedAt:new Date().toISOString(),
-    feed:feedH,diaper:diaperH,sleep:sleepH,weight:weightH,height:heightH,fever:feverH,vaccine:vaccineH,notes:notesH
+    feed:feedH,diaper:diaperH,sleep:sleepH,weight:weightH,height:heightH,fever:feverH,vaccine:vaccineH,notes:notesH,customVax:customVaccineSeries,birthDate:birthDate
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
@@ -1293,10 +1299,10 @@ function importData(event){
       if(!data.version||!data.feed){msg.textContent='❌ Geçersiz dosya formatı';msg.style.color='var(--rose-dark)';return;}
       if(!confirm(`Yedek bulundu (${new Date(data.exportedAt).toLocaleDateString('tr-TR')}). Mevcut veriler silinecek. Devam?`)){event.target.value='';return;}
       feedH=data.feed||[];diaperH=data.diaper||[];sleepH=data.sleep||[];
-      weightH=data.weight||[];heightH=data.height||[];feverH=data.fever||[];vaccineH=data.vaccine||[];
+      weightH=data.weight||[];heightH=data.height||[];feverH=data.fever||[];vaccineH=data.vaccine||[];if(data.customVax){customVaccineSeries=data.customVax;localStorage.setItem("bb_custom_vax",JSON.stringify(data.customVax));}if(data.birthDate){birthDate=data.birthDate;window.birthDate=birthDate;localStorage.setItem("bb_birth",String(data.birthDate));}
       sv('bb_fever',feverH);sv('bb_vaccine',vaccineH);
       sv('bb_feed',feedH);sv('bb_diaper',diaperH);sv('bb_sleep',sleepH);
-      sv('bb_weight',weightH);sv('bb_height',heightH);sv('bb_notes',notesH);
+      sv('bb_weight',weightH);sv('bb_height',heightH);sv('bb_notes',notesH);if(data.customVax){sv('bb_custom_vax',customVaccineSeries);}if(data.birthDate){sv('bb_birth',[birthDate]);}
       renderFeedHistory();renderDiaperCd();renderSleepStatus();renderWeightHistory();updateCountdown();
       msg.textContent=`✅ Geri yüklendi! ${feedH.length} emzirme, ${diaperH.length} bez, ${sleepH.length} uyku kaydı`;
       msg.style.color='var(--green-dark)';
@@ -1365,7 +1371,7 @@ function clearFever(){if(!confirm('Ateş geçmişi silinsin mi?'))return;feverH=
 var birthDate=parseInt(localStorage.getItem("bb_birth")||"0")||null;
 window.birthDate=birthDate;
 if(birthDate){setTimeout(function(){var inp=document.getElementById("birthDate");if(inp)inp.value=new Date(birthDate).toISOString().slice(0,10);},500);}
-function saveBirthDate(){var val=document.getElementById("birthDate").value;if(!val){showToast("Dogum tarihi secin","error");return;}birthDate=new Date(val).getTime();window.birthDate=birthDate;localStorage.setItem("bb_birth",birthDate);try{window.FS_setDoc(window.FS_DATA_DOC,{birthDate:birthDate},{merge:true});}catch(e){}updateBabyAge();renderVaccineTimeline();syncVaccineReminders();showToast("Dogum tarihi kaydedildi","success");}
+function saveBirthDate(){var val=document.getElementById("birthDate").value;if(!val){showToast("Dogum tarihi secin","error");return;}birthDate=new Date(val).getTime();window.birthDate=birthDate;localStorage.setItem("bb_birth",birthDate);sv("bb_birth",[birthDate]);if(window.fsWrite){window.fsWrite("bb_birth",[birthDate]);}else{}updateBabyAge();renderVaccineTimeline();syncVaccineReminders();showToast("Dogum tarihi kaydedildi","success");}
 function updateBabyAge(){var el=document.getElementById("babyAge");if(!el)return;if(!birthDate){el.textContent="Dogum tarihi girilince asi takvimi goruntulenecek ✨";return;}var diffDays=Math.floor((Date.now()-birthDate)/86400000);var months=Math.floor(diffDays/30.44),days=Math.floor(diffDays%30.44);var years=Math.floor(months/12),remainMonths=months%12;var text="";if(years>0)text+=years+" yas ";if(remainMonths>0||years===0)text+=remainMonths+" ay ";if(days>0&&years===0)text+=days+" gun";el.textContent="🎂 "+text+"lik";}
 function getBabyAgeMonths(){if(!birthDate)return null;return Math.floor((Date.now()-birthDate)/(30.44*86400000));}
 
@@ -1374,10 +1380,11 @@ var VAX_ALIASES={"hep b":["hepatit b"],"hepb":["hepatit b"],"hbv":["hepatit b"],
 function normalizeVaxName(name){var n=(name||"").toLowerCase().replace(/[^a-z0-9ğüşıöç\-]/g,"").trim();for(var alias in VAX_ALIASES){if(n.includes(alias))return VAX_ALIASES[alias][0];var targets=VAX_ALIASES[alias];for(var t=0;t<targets.length;t++){if(n.includes(targets[t]))return targets[0];}}return n;}
 function normalizeDose(dose){var d=(dose||"").toLowerCase().trim();if(d.includes("1")||d.includes("tek"))return"1. doz";if(d.includes("2"))return"2. doz";if(d.includes("3"))return"3. doz";if(d.includes("rapel")||d.includes("4"))return"rapel";return d;}
 var VACCINE_SCHEDULE=[];
-function matchVaccines(){var babyAgeMonths=getBabyAgeMonths();var customSeries=JSON.parse(localStorage.getItem("bb_custom_vax")||"[]");var fullSchedule=VACCINE_SCHEDULE.slice();for(var s=0;s<customSeries.length;s++){var cs=customSeries[s];for(var d=0;d<cs.doses.length;d++){fullSchedule.push({plannedDate:cs.doses[d].plannedDate,name:cs.name,dose:cs.doses[d].dose,desc:"Ozel asi serisi",group:"ozel",seriesIdx:s,doseIdx:d});}}var schedule=fullSchedule.map(function(sched){var match=null,schedNormal=normalizeVaxName(sched.name);for(var i=0;i<vaccineH.length;i++){var v=vaccineH[i];if(normalizeVaxName(v.name)===schedNormal&&normalizeDose(v.dose)===normalizeDose(sched.dose)){match=v;break;}}if(match)return{name:sched.name,dose:sched.dose,desc:sched.desc,plannedDate:sched.plannedDate,group:sched.group,status:"done",matched:match,date:match.timestamp,seriesIdx:sched.seriesIdx,doseIdx:sched.doseIdx};return{name:sched.name,dose:sched.dose,desc:sched.desc,plannedDate:sched.plannedDate,group:sched.group,status:"pending",matched:null,seriesIdx:sched.seriesIdx,doseIdx:sched.doseIdx};});for(var i=0;i<vaccineH.length;i++){var v=vaccineH[i],vNormal=normalizeVaxName(v.name),found=false;for(var j=0;j<schedule.length;j++){if(vNormal===normalizeVaxName(schedule[j].name)&&normalizeDose(v.dose)===normalizeDose(schedule[j].dose)){found=true;break;}}if(!found){schedule.push({name:v.name,dose:v.dose||"Tek Doz",desc:v.note||"Ozel asi",plannedDate:null,group:"ozel",status:"done",matched:v,date:v.timestamp});}}schedule.sort(function(a,b){if(a.status==="done"&&b.status!=="done")return 1;if(b.status==="done"&&a.status!=="done")return-1;if(!a.plannedDate)return 1;if(!b.plannedDate)return-1;return a.plannedDate-b.plannedDate;});return schedule;}
+function matchVaccines(){var babyAgeMonths=getBabyAgeMonths();var customSeries=customVaccineSeries;var fullSchedule=VACCINE_SCHEDULE.slice();for(var s=0;s<customSeries.length;s++){var cs=customSeries[s];for(var d=0;d<cs.doses.length;d++){fullSchedule.push({plannedDate:cs.doses[d].plannedDate,name:cs.name,dose:cs.doses[d].dose,desc:"Ozel asi serisi",group:"ozel",seriesIdx:s,doseIdx:d});}}var schedule=fullSchedule.map(function(sched){var match=null,schedNormal=normalizeVaxName(sched.name);for(var i=0;i<vaccineH.length;i++){var v=vaccineH[i];if(normalizeVaxName(v.name)===schedNormal&&normalizeDose(v.dose)===normalizeDose(sched.dose)){match=v;break;}}if(match)return{name:sched.name,dose:sched.dose,desc:sched.desc,plannedDate:sched.plannedDate,group:sched.group,status:"done",matched:match,date:match.timestamp,seriesIdx:sched.seriesIdx,doseIdx:sched.doseIdx};return{name:sched.name,dose:sched.dose,desc:sched.desc,plannedDate:sched.plannedDate,group:sched.group,status:"pending",matched:null,seriesIdx:sched.seriesIdx,doseIdx:sched.doseIdx};});for(var i=0;i<vaccineH.length;i++){var v=vaccineH[i],vNormal=normalizeVaxName(v.name),found=false;for(var j=0;j<schedule.length;j++){if(vNormal===normalizeVaxName(schedule[j].name)&&normalizeDose(v.dose)===normalizeDose(schedule[j].dose)){found=true;break;}}if(!found){schedule.push({name:v.name,dose:v.dose||"Tek Doz",desc:v.note||"Ozel asi",plannedDate:null,group:"ozel",status:"done",matched:v,date:v.timestamp});}}schedule.sort(function(a,b){if(a.status==="done"&&b.status!=="done")return 1;if(b.status==="done"&&a.status!=="done")return-1;if(!a.plannedDate)return 1;if(!b.plannedDate)return-1;return a.plannedDate-b.plannedDate;});return schedule;}
 function quickMarkVaccine(name,dose){if(!confirm(name+"\\n("+dose+") yapildi olarak isaretlensin mi?"))return;vaccineH.unshift({id:uid(),timestamp:Date.now(),name:name,dose:dose,note:""});vaccineH.sort(function(a,b){return b.timestamp-a.timestamp;});if(vaccineH.length>50)vaccineH=vaccineH.slice(0,50);sv("bb_vaccine",vaccineH);syncVaccineReminders();renderVaccineHistory();showToast("💉 "+name+" ("+dose+") — yapildi!","success");}
-function deleteCustomDose(seriesIdx,doseIdx){var cs=customVaccineSeries[seriesIdx];if(!cs)return;var dose=cs.doses[doseIdx];if(!confirm(cs.name+" - "+dose.dose+"\\ndozu silinsin mi?"))return;cs.doses.splice(doseIdx,1);if(cs.doses.length===0){customVaccineSeries.splice(seriesIdx,1);}localStorage.setItem("bb_custom_vax",JSON.stringify(customVaccineSeries));try{window.FS_setDoc(window.FS_DATA_DOC,{customVax:customVaccineSeries},{merge:true});}catch(e){}renderVaccineTimeline();showToast("Doz silindi","error");}
-function deleteCustomSeries(idx){var cs=customVaccineSeries[idx];if(!cs)return;var doseNames=cs.doses.map(function(d){return d.dose;}).join(", ");if(!confirm(cs.name+" serisini sil\\n("+cs.doses.length+" doz: "+doseNames+")\\n\\nBu islem geri alinamaz!"))return;customVaccineSeries.splice(idx,1);localStorage.setItem("bb_custom_vax",JSON.stringify(customVaccineSeries));try{window.FS_setDoc(window.FS_DATA_DOC,{customVax:customVaccineSeries},{merge:true});}catch(e){}renderVaccineTimeline();showToast("Asi serisi silindi","error");}function renderVaccineTimeline(){var card=document.getElementById("vaccineScheduleCard"),prog=document.getElementById("vaccineProgress"),tl=document.getElementById("vaccineTimeline");if(!card||!prog||!tl)return;var schedule=matchVaccines(),done=0,overdue=0;for(var i=0;i<schedule.length;i++){if(schedule[i].status==="done")done++;if(schedule[i].status==="pending")overdue++;}var total=schedule.length;if(!birthDate){card.style.display="block";prog.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:.8rem;">Dogum tarihi girilince asi takvimi goruntulenecek ✨</div>';tl.innerHTML="";return;}card.style.display="block";var pct=Math.round(done/Math.max(total,1)*100);var reminders=[];for(var i=0;i<schedule.length;i++){var s=schedule[i];if(s.status==="pending"&&s.plannedDate){var daysUntil=Math.floor((s.plannedDate-Date.now())/86400000);if(daysUntil<=7&&daysUntil>0)reminders.push({name:s.name,dose:s.dose,days:daysUntil});}}prog.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:.7rem;color:var(--text-light);">Tamamlanan</span><span style="font-size:.8rem;font-weight:700;color:var(--green-dark);">'+done+'/'+total+' asi (%'+pct+')</span></div><div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%;background:linear-gradient(90deg,var(--green),var(--green-dark));"></div></div>'+(overdue>0?'<div style="text-align:center;font-size:.78rem;font-weight:700;color:var(--yellow-dark);margin-top:5px;">⏳ '+overdue+' asi bekliyor</div>':'');if(reminders.length>0){var rh="";for(var i=0;i<reminders.length;i++){var r=reminders[i],label=r.days<=1?"🔔 Yarin!":(r.days<=2?"⚠️ "+r.days+" gun kaldi":"⏰ "+r.days+" gun kaldi");rh+='<div class="vax-reminder">'+label+' — '+r.name+' ('+r.dose+')</div>';}prog.innerHTML+=rh;}var statusLabels={done:"✅ Yapildi",pending:"⏳ Bekliyor",custom:"💜 Ozel Asi"};
+function editCustomDose(seriesIdx,doseIdx){var cs=customVaccineSeries[seriesIdx];if(!cs)return;var dose=cs.doses[doseIdx];var newDate=prompt(cs.name+" - "+dose.dose+"\\nYeni tarih (YYYY-AA-GG):",new Date(dose.plannedDate).toISOString().slice(0,10));if(!newDate)return;var ts=new Date(newDate).getTime();if(isNaN(ts)){showToast("Gecersiz tarih","error");return;}dose.plannedDate=ts;sv("bb_custom_vax",customVaccineSeries);renderVaccineTimeline();showToast("📅 "+dose.dose+" tarihi guncellendi","success");}
+function deleteCustomDose(seriesIdx,doseIdx){var cs=customVaccineSeries[seriesIdx];if(!cs)return;var dose=cs.doses[doseIdx];if(!confirm(cs.name+" - "+dose.dose+"\\ndozu silinsin mi?"))return;cs.doses.splice(doseIdx,1);if(cs.doses.length===0){customVaccineSeries.splice(seriesIdx,1);}sv("bb_custom_vax",customVaccineSeries);renderVaccineTimeline();showToast("Doz silindi","error");}
+function deleteCustomSeries(idx){var cs=customVaccineSeries[idx];if(!cs)return;var doseNames=cs.doses.map(function(d){return d.dose;}).join(", ");if(!confirm(cs.name+" serisini sil\\n("+cs.doses.length+" doz: "+doseNames+")\\n\\nBu islem geri alinamaz!"))return;customVaccineSeries.splice(idx,1);sv("bb_custom_vax",customVaccineSeries);renderVaccineTimeline();showToast("Asi serisi silindi","error");}function renderVaccineTimeline(){var card=document.getElementById("vaccineScheduleCard"),prog=document.getElementById("vaccineProgress"),tl=document.getElementById("vaccineTimeline");if(!card||!prog||!tl)return;var schedule=matchVaccines(),done=0,overdue=0;for(var i=0;i<schedule.length;i++){if(schedule[i].status==="done")done++;if(schedule[i].status==="pending")overdue++;}var total=schedule.length;if(!birthDate){card.style.display="block";prog.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:.8rem;">Dogum tarihi girilince asi takvimi goruntulenecek ✨</div>';tl.innerHTML="";return;}card.style.display="block";var pct=Math.round(done/Math.max(total,1)*100);var reminders=[];for(var i=0;i<schedule.length;i++){var s=schedule[i];if(s.status==="pending"&&s.plannedDate){var daysUntil=Math.floor((s.plannedDate-Date.now())/86400000);if(daysUntil<=7&&daysUntil>0)reminders.push({name:s.name,dose:s.dose,days:daysUntil});}}prog.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:.7rem;color:var(--text-light);">Tamamlanan</span><span style="font-size:.8rem;font-weight:700;color:var(--green-dark);">'+done+'/'+total+' asi (%'+pct+')</span></div><div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%;background:linear-gradient(90deg,var(--green),var(--green-dark));"></div></div>'+(overdue>0?'<div style="text-align:center;font-size:.78rem;font-weight:700;color:var(--yellow-dark);margin-top:5px;">⏳ '+overdue+' asi bekliyor</div>':'');if(reminders.length>0){var rh="";for(var i=0;i<reminders.length;i++){var r=reminders[i],label=r.days<=1?"🔔 Yarin!":(r.days<=2?"⚠️ "+r.days+" gun kaldi":"⏰ "+r.days+" gun kaldi");rh+='<div class="vax-reminder">'+label+' — '+r.name+' ('+r.dose+')</div>';}prog.innerHTML+=rh;}var statusLabels={done:"✅ Yapildi",pending:"⏳ Bekliyor",custom:"💜 Ozel Asi"};
 // Dozlari asi adina gore grupla
 var groups={};
 for(var i=0;i<schedule.length;i++){
@@ -1399,20 +1406,22 @@ for(var gname in groups){
     var monthLabel=v.plannedDate?expectedDate:"",
         clickable=v.status==="pending",
         hint=clickable?' <span style="font-size:.6rem;opacity:.6;">(yapildi isaretle)</span>':"",
-        delBtn=(v.seriesIdx!==undefined)?' <button onclick="event.stopPropagation();deleteCustomDose('+v.seriesIdx+','+v.doseIdx+')" style="border:none;background:none;color:var(--text-light);cursor:pointer;font-size:.7rem;padding:0 2px;" title="Bu dozu sil">🗑️</button>':"";
+        delBtn=(v.seriesIdx!==undefined)?' <button onclick="event.stopPropagation();editCustomDose('+v.seriesIdx+','+v.doseIdx+')" style="border:none;background:none;color:var(--text-light);cursor:pointer;font-size:.65rem;padding:0 2px;" title="Tarih duzelt">✏️</button><button onclick="event.stopPropagation();deleteCustomDose('+v.seriesIdx+','+v.doseIdx+')" style="border:none;background:none;color:var(--text-light);cursor:pointer;font-size:.7rem;padding:0 2px;" title="Bu dozu sil">🗑️</button>'':"";
     html+='<div class="vti '+v.status+'" data-vax-idx="'+d+'"><div class="vtname">'+v.dose+delBtn+'</div><div class="vtstatus">'+statusLabels[v.status]+(dateStr?" · Yapildi: "+dateStr:"")+((v.status!=="done"&&monthLabel)?" · Beklenen: "+monthLabel:"")+hint+noteStr+'</div></div>';
   }
   html+='</div></div>';
 }
-tl.innerHTML=html;var items=tl.querySelectorAll(".vti");for(var j=0;j<items.length;j++){(function(vti,sched){if(sched.status==="pending"){vti.style.cursor="pointer";vti.addEventListener("click",function(){quickMarkVaccine(sched.name,sched.dose);});}})(items[j],schedule[j]);}}
+tl.innerHTML=html;var items=tl.querySelectorAll(".vti");for(var j=0;j<items.length;j++){(function(vti,sched){if(sched.status==="pending"){vti.style.cursor="pointer";vti.addEventListener("click",function(){quickMarkVaccine(sched.name,sched.dose);});}})(items[j],schedule[j]);}syncVaccineReminders();}
 function syncVaccineReminders(){if(!birthDate)return;var names=vaccineH.map(function(v){return{name:v.name,dose:v.dose};});var upcoming=[];if(typeof customVaccineSeries!=="undefined"){for(var i=0;i<customVaccineSeries.length;i++){var cs=customVaccineSeries[i];for(var j=0;j<cs.doses.length;j++){var d=cs.doses[j];var done=vaccineH.some(function(v){return normalizeVaxName(v.name)===normalizeVaxName(cs.name)&&normalizeDose(v.dose)===normalizeDose(d.dose);});if(!done)upcoming.push({name:cs.name,dose:d.dose,plannedDate:d.plannedDate});}}}try{fetch(window.API_URL+"/api/update-vaccine-reminders",{method:"POST",headers:{"Content-Type":"application/json","X-API-Secret":window.API_SECRET},body:JSON.stringify({birthDate:birthDate,vaccineNames:names,upcoming:upcoming})}).catch(function(){});}catch(e){}}
 
 // ── OZEL ASI SERISI ──
-var customVaccineSeries=JSON.parse(localStorage.getItem("bb_custom_vax")||"[]");window.customVaccineSeries=customVaccineSeries;
+var customVaccineSeries=(function(){try{return JSON.parse(localStorage.getItem("bb_custom_vax")||"[]");}catch(e){return[];}})();window.customVaccineSeries=customVaccineSeries;
+// LocalStorage'daki verileri Firestore'a push et (modul script yuklenince)
+setTimeout(function(){if(customVaccineSeries.length>0&&window.fsWrite){window.fsWrite("bb_custom_vax",customVaccineSeries);}},2000);
 var customDoseCount=1;
 function toggleCustomSeries(){var form=document.getElementById("customSeriesForm"),btn=document.getElementById("customSeriesToggle");if(form.style.display==="none"){form.style.display="block";btn.textContent="✕ Kapat";document.getElementById("customVaxName").value="";document.getElementById("customSeriesMsg").textContent="";customDoseCount=1;document.getElementById("customDoses").innerHTML='<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;"><input class="note-inp" id="cdLabel0" placeholder="Doz adi (1. Doz, Rapel...)" maxlength="20" style="flex:1;padding:7px 8px;font-size:.78rem;margin-bottom:0;"><input type="date" id="cdDate0" class="winp" style="flex:1;padding:7px 8px;font-size:.78rem;"></div>';}else{form.style.display="none";btn.textContent="+ Ekle";}}
 function addCustomDose(){customDoseCount++;var div=document.createElement("div");div.style.cssText="display:flex;gap:6px;align-items:center;margin-bottom:6px;";div.innerHTML='<input class="note-inp" id="cdLabel'+(customDoseCount-1)+'" placeholder="Doz adi" maxlength="20" style="flex:1;padding:7px 8px;font-size:.78rem;margin-bottom:0;"><input type="date" id="cdDate'+(customDoseCount-1)+'" class="winp" style="flex:1;padding:7px 8px;font-size:.78rem;"><button onclick="this.parentElement.remove();customDoseCount--" style="border:none;background:none;color:var(--rose-dark);cursor:pointer;font-size:.9rem;">✕</button>';document.getElementById("customDoses").appendChild(div);}
-function saveCustomVaccineSeries(){var name=document.getElementById("customVaxName").value.trim(),msg=document.getElementById("customSeriesMsg");if(!name){msg.textContent="❌ Asi adi girin";msg.style.color="var(--rose-dark)";return;}var doses=[];for(var i=0;i<customDoseCount;i++){var dateEl=document.getElementById("cdDate"+i),labelEl=document.getElementById("cdLabel"+i);if(dateEl&&dateEl.value){var ts=new Date(dateEl.value).getTime();if(!isNaN(ts)){var label=labelEl&&labelEl.value.trim()?labelEl.value.trim():(i+1)+". Doz";doses.push({dose:label,plannedDate:ts});}}}if(doses.length===0){msg.textContent="❌ En az bir doz icin tarih girin";msg.style.color="var(--rose-dark)";return;}customVaccineSeries.push({name:name,doses:doses,addedAt:Date.now()});localStorage.setItem("bb_custom_vax",JSON.stringify(customVaccineSeries));try{window.FS_setDoc(window.FS_DATA_DOC,{customVax:customVaccineSeries},{merge:true});}catch(e){}msg.textContent="✅ "+name+" eklendi ("+doses.length+" doz)";msg.style.color="var(--green-dark)";toggleCustomSeries();renderVaccineTimeline();showToast("💉 "+name+" takvime eklendi","success");}
+function saveCustomVaccineSeries(){var name=document.getElementById("customVaxName").value.trim(),msg=document.getElementById("customSeriesMsg");if(!name){msg.textContent="❌ Asi adi girin";msg.style.color="var(--rose-dark)";return;}var doses=[];for(var i=0;i<customDoseCount;i++){var dateEl=document.getElementById("cdDate"+i),labelEl=document.getElementById("cdLabel"+i);if(dateEl&&dateEl.value){var ts=new Date(dateEl.value).getTime();if(!isNaN(ts)){var label=labelEl&&labelEl.value.trim()?labelEl.value.trim():(i+1)+". Doz";doses.push({dose:label,plannedDate:ts});}}}if(doses.length===0){msg.textContent="❌ En az bir doz icin tarih girin";msg.style.color="var(--rose-dark)";return;}customVaccineSeries.push({id:uid(),name:name,doses:doses,addedAt:Date.now()});sv("bb_custom_vax",customVaccineSeries);msg.textContent="✅ "+name+" eklendi ("+doses.length+" doz)";msg.style.color="var(--green-dark)";toggleCustomSeries();renderVaccineTimeline();showToast("💉 "+name+" takvime eklendi","success");}
 
 function saveVaccine(){
   const name=document.getElementById('vaccineName').value.trim();
@@ -1506,6 +1515,14 @@ renderFeverHistory();renderVaccineHistory();renderNotes();
 scheduleAlarm();
 initPWA();
 setTimeout(function(){var lo=document.getElementById("loadingOverlay");if(lo)lo.style.display="none";},1000);
+// LocalStorage'daki tum verileri Firestore'a sync et (fsWrite hazir olana kadar dene, max 15sn)
+var _syncRetry=0;
+(function syncAllToFirestore(){
+  if(window.fsWrite&&window.FS_setDoc){
+    if(birthDate)
+    if(customVaccineSeries&&customVaccineSeries.length>0)window.fsWrite("bb_custom_vax",customVaccineSeries);
+  }else if(_syncRetry<15){_syncRetry++;setTimeout(syncAllToFirestore,1000);}
+})();
 setTimeout(function(){var box=document.getElementById("notifBanner");if(!box)return;var perm=Notification.permission;if(perm==="granted"){box.className="notif-banner granted";box.textContent="✅ Bildirimler aktif!";}else if(perm==="denied"){box.className="notif-banner denied";box.textContent="❌ Bildirim engellendi.";}else{box.className="notif-banner";box.textContent="🔔 Bildirim izni verilmemis.";}},3000);
 </script>
 </body>
