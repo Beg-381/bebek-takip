@@ -565,24 +565,35 @@ function refreshUI() {
 }
 
 // İlk yükleme — Firestore'dan çek, UI'yi güncelle
+let initialLoadDone = false;
 getDoc(DATA_DOC).then(snap => {
   if (snap.exists()) { applyData(snap.data()); refreshUI(); }
+  initialLoadDone = true;
+  document.getElementById('loadingOverlay').style.display = 'none';
+}).catch(err => {
+  console.error('Firestore yukleme hatasi:', err);
+  initialLoadDone = true;
+  document.getElementById('loadingOverlay').style.display = 'none';
 });
 
-// Gerçek zamanlı dinle
-let firstSnap = true;
+// Gerçek zamanlı dinle — her snapshot'u uygula, merge et
 onSnapshot(DATA_DOC, snap => {
   if (!snap.exists()) return;
-  if (firstSnap) { firstSnap = false; return; } // ilk tetiklenmeyi atla
+  if (!initialLoadDone) { applyData(snap.data()); refreshUI(); initialLoadDone = true; return; }
   applyData(snap.data());
   refreshUI();
 });
 
-// sv() çağrıldığında Firestore'a yaz
+// sv() çağrıldığında Firestore'a yaz (merge ile)
 window.fsWrite = async function(key, data) {
   const keyMap = {bb_feed:'feed',bb_diaper:'diaper',bb_sleep:'sleep',bb_weight:'weight',bb_height:'height',bb_fever:'fever',bb_vaccine:'vaccine',bb_notes:'notes',bb_custom_vax:'customVax'};
   if (!keyMap[key]) return;
-  try { await setDoc(DATA_DOC, {[keyMap[key]]: data}, {merge: true}); } catch(e) { console.error('FS:', e); }
+  try {
+    const snap = await getDoc(DATA_DOC);
+    const remote = snap.exists() ? (snap.data()[keyMap[key]] || []) : [];
+    const merged = window._mergeById ? window._mergeById(remote, data, 100) : data;
+    await setDoc(DATA_DOC, {[keyMap[key]]: merged}, {merge: true});
+  } catch(e) { console.error('FS:', e); }
 };
 </script>
 
