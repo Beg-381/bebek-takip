@@ -1,17 +1,13 @@
 name = "bebek-takip"
 main = "worker.js"
 compatibility_date = "2026-04-19"
-compatibility_flags = ["nodejs_compat"]
 
-[site]
-bucket = "./"
-exclude = ["node_modules", ".git"]
-
-# KV Storage - aşağıdaki id'yi sen oluşturunca dolduracaksın
 [[kv_namespaces]]
 binding = "BEBEK_KV"
 id = "76a597e2104d463db6aa6dcec8991f14"
 
-# Her 30 dakikada cron çalışır
+[ai]
+binding = "AI"
+
 [triggers]
-crons = ["*/30 * * * *"]
+crons = ["*/5 * * * *"]

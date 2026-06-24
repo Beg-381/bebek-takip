@@ -1,4 +1,4 @@
-const CACHE = 'bebek-v10';
+const CACHE = 'bebek-v14';
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
@@ -24,17 +24,28 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, clone));
       }
       return res;
-    }).catch(() => caches.match(e.request))
+    }).catch(() => caches.match(e.request).then(r => r || new Response('Offline', { status: 503 })))
   );
 });
 self.addEventListener('push', e => {
-  let data = { title: '🤱 Emzirme Vakti!', body: 'Bebek seni bekliyor!', icon: self.registration.scope + 'icon-192.png' };
-  try { data = { ...data, ...e.data.json() }; } catch {}
+  let title = '🤱 Emzirme Vakti!';
+  let body = 'Bebek seni bekliyor!';
+  let icon = self.registration.scope + 'icon-192.png';
+  // Düzeltme: tag artık push verisinden okunuyor
+  let tag = 'genel';
+  try {
+    const d = e.data.json();
+    title = d.title || d.notification?.title || title;
+    body  = d.body  || d.notification?.body  || body;
+    icon  = d.icon  || d.notification?.icon  || icon;
+    // FCM webpush notification tag'i buradan geliyor
+    tag   = d.tag   || d.notification?.tag   || d.webpush?.notification?.tag || tag;
+  } catch {}
   e.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon,
-      tag: 'emzirme',
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      tag,           // artık dinamik: 'emzirme', 'gundayin', 'iyigeceler', 'surpriz'
       renotify: true,
       vibrate: [200, 100, 200]
     })

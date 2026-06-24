@@ -1,7 +1,9 @@
 {
   "name": "Bebek Takip",
   "short_name": "Alisam",
-  "description": "Emzirme, bez, uyku ve büyüme takibi",
+  "description": "Emzirme, bez, uyku, büyüme ve aşı takibi",
+  "categories": ["health", "lifestyle"],
+  "lang": "tr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

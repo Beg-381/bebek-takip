@@ -3,11 +3,20 @@
   "version": "1.0.0",
   "main": "worker.js",
   "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:core": "playwright test tests/core.spec.js",
+    "test:vaccine": "playwright test tests/vaccine.spec.js"
+  },
   "dependencies": {
     "@cloudflare/kv-asset-handler": "^0.4.2",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "wrangler": "^4.83.0"
+    "wrangler": "^4.83.0",
+    "@playwright/test": "^1.52.0",
+    "serve-handler": "^6.1.5"
   }
 }

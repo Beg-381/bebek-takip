@@ -11,7 +11,7 @@
 <title>🤱 Bebek Takip</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Varela+Round&display=swap" rel="stylesheet">
 <style>
 :root {
   --rose:#f8a4b8;--rose-dark:#e07090;--lavender:#c8a8e9;
@@ -28,7 +28,7 @@
   --bg:#1a1015;--card:#231820;--text:#f0e0e8;--text-light:#a08090;--border:#3a2535;
   --shadow:0 8px 32px rgba(0,0,0,0.4);--cream:#1a1015;--soft-white:#231820;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
+*{box-sizing:border-box;margin:0;padding:0;}button{touch-action:manipulation;}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background 0.3s,color 0.3s;padding-top:calc(88px + var(--status-bar-height, 0px));}
 
 .tabs{display:flex;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--border);position:fixed;top:var(--status-bar-height, 0px);left:0;right:0;z-index:1000;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
@@ -39,8 +39,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .tab.active{color:var(--rose-dark);border-bottom-color:var(--rose-dark);}
 
 header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;max-width:480px;margin:0 auto;}
-header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose-dark);}
-.dark-btn{border:none;background:var(--card);border-radius:20px;padding:6px 12px;font-size:1rem;cursor:pointer;box-shadow:var(--shadow);}
+header h1{font-family:'Varela Round',sans-serif;font-size:1.4rem;color:var(--rose-dark);}
+.dark-btn{border:none;background:var(--card);border-radius:var(--radius-sm);padding:6px 12px;font-size:1rem;cursor:pointer;box-shadow:var(--shadow-btn);transition:transform .2s,box-shadow .2s;}.dark-btn:active{transform:scale(.92);box-shadow:0 1px 6px rgba(200,120,150,.10);}.sync-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:background .3s;}.sync-dot.ok{background:var(--green-dark);}.sync-dot.syncing{background:var(--yellow-dark);animation:pulse 1s infinite;}.sync-dot.error{background:var(--rose-dark);}.sync-dot.offline{background:var(--text-light);}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 .page{display:none;max-width:480px;margin:0 auto;padding:0 16px 80px;}
 .page.active{display:block;}
@@ -108,7 +108,7 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 .notif-banner.granted{background:#d1fae5;border-color:#34d399;color:#065f46;}
 
 .qrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.qbtn{border:none;border-radius:14px;padding:14px 8px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all 0.2s;}
+.qbtn{border:none;border-radius:var(--radius-md);padding:14px 8px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all 0.2s;}
 .qbtn:active{transform:scale(0.97);}
 .qbtn .qi{font-size:1.5rem;}
 .qbtn.bd{background:linear-gradient(135deg,#fef9c3,var(--yellow));color:#92400e;}
@@ -183,7 +183,10 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 
 <header>
   <h1 id="pageTitle">🤱 Emzirme</h1>
-  <button class="dark-btn" onclick="toggleDark()" id="darkBtn">🌙</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span class="sync-dot ok" id="syncDot" title="Senkronize"></span>
+    <button class="dark-btn" onclick="toggleDark()" id="darkBtn">🌙</button>
+  </div>
 </header>
 
 <!-- EMZİRME -->
@@ -203,7 +206,7 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
   <!-- ALARM OVERLAY -->
   <div id="alarmOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(224,112,144,0.97);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
     <div style="font-size:5rem;animation:pulse-alarm 0.8s infinite alternate;">🤱</div>
-    <div style="color:white;font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;margin:16px 0 8px;">Emzirme Vakti!</div>
+    <div style="color:white;font-family:'Varela Round',sans-serif;font-size:2rem;font-weight:700;margin:16px 0 8px;">Emzirme Vakti!</div>
     <div style="color:rgba(255,255,255,0.9);font-size:1.1rem;margin-bottom:8px;" id="alarmSideText">Sıradaki taraf hazır</div>
     <div style="color:rgba(255,255,255,0.8);font-size:0.9rem;margin-bottom:30px;" id="alarmTimeText"></div>
     <button onclick="dismissAlarm()" style="border:none;background:white;color:#e07090;border-radius:20px;padding:16px 40px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1.1rem;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.2);">✓ Tamam, Başlıyorum</button>
@@ -476,6 +479,7 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--rose
 </div>
 
 <!-- YEDEK -->
+<div class="card"><div class="clabel">👶 Bebek Bilgileri</div><div style="margin-bottom:10px;"><div style="font-size:.7rem;color:var(--text-light);margin-bottom:4px;">Dogum Tarihi</div><div style="display:flex;gap:8px;"><input type="date" id="birthDate" class="winp" style="flex:1;padding:8px 12px;"><button class="wsave" onclick="saveBirthDate()" style="padding:8px 16px;white-space:nowrap;">Kaydet</button></div></div><div id="babyAge" style="text-align:center;font-size:.85rem;color:var(--rose-dark);font-weight:700;margin-top:5px;"></div></div>
 <div class="page" id="page-yedek">
   <div class="card">
     <div class="clabel">🔔 Bildirimler</div>
@@ -597,7 +601,7 @@ function showTab(name){
   if(name==='analiz')renderAnaliz();
   if(name==='uyku'){renderSleepStatus();renderSleepHistory();}
   if(name==='bez'){renderDiaperCd();renderDiaperHistory();}
-  if(name==='yedek')renderStorageInfo();
+  if(name==='yedek'){renderStorageInfo();updateBabyAge();if(birthDate)document.getElementById('birthDate').value=new Date(birthDate).toISOString().slice(0,10);}
   if(name==='ates'){renderFeverHistory();}
   if(name==='igne'){renderVaccineHistory();}
   if(name==='notlar'){renderNotes();}
@@ -917,7 +921,7 @@ function stopSession(){
   if(activeSide&&sideStart){const e=Math.floor((Date.now()-sideStart)/1000);if(activeSide==='sol')leftSecs+=e;else rightSecs+=e;}
   if(transferStart){transferSecs=Math.floor((Date.now()-transferStart)/1000);transferStart=null;}
   const note=document.getElementById('feedNote').value.trim();
-  const entry={timestamp:Date.now(),startSide:firstSide||'sol',leftSecs,rightSecs,transferSecs,totalSecs:leftSecs+rightSecs,note};
+  const entry={id:uid(),timestamp:Date.now(),startSide:firstSide||"sol",leftSecs,rightSecs,transferSecs,totalSecs:leftSecs+rightSecs,note};
   feedH.unshift(entry);if(feedH.length>100)feedH=feedH.slice(0,100);
   sv('bb_feed',feedH);
   activeSide=null;pausedSide=null;transferMode=false;sessionStart=null;firstSide=null;
@@ -1112,7 +1116,7 @@ function saveWeight(type){
   const val=parseFloat(document.getElementById(id).value);
   if(isNaN(val)||val<=0){alert('Geçerli değer girin');return;}
   const arr=type==='kilo'?weightH:heightH;
-  arr.unshift({timestamp:Date.now(),val});if(arr.length>30)arr.splice(30);
+  arr.unshift({id:uid(),timestamp:Date.now(),val});if(arr.length>30)arr.splice(30);
   sv(type==='kilo'?'bb_weight':'bb_height',arr);
   document.getElementById(id).value='';renderWeightHistory();
 }
@@ -1324,6 +1328,31 @@ function deleteFever(i){feverH.splice(i,1);sv('bb_fever',feverH);renderFeverHist
 function clearFever(){if(!confirm('Ateş geçmişi silinsin mi?'))return;feverH=[];sv('bb_fever',feverH);renderFeverHistory();}
 
 // ── İĞNE/AŞI ──
+// ── DOGUM TARIHI ──
+var birthDate=parseInt(localStorage.getItem("bb_birth")||"0")||null;
+window.birthDate=birthDate;
+if(birthDate){setTimeout(function(){var inp=document.getElementById("birthDate");if(inp)inp.value=new Date(birthDate).toISOString().slice(0,10);},500);}
+function saveBirthDate(){var val=document.getElementById("birthDate").value;if(!val){showToast("Dogum tarihi secin","error");return;}birthDate=new Date(val).getTime();window.birthDate=birthDate;localStorage.setItem("bb_birth",birthDate);try{window.FS_setDoc(window.FS_DATA_DOC,{birthDate:birthDate},{merge:true});}catch(e){}updateBabyAge();renderVaccineTimeline();syncVaccineReminders();showToast("Dogum tarihi kaydedildi","success");}
+function updateBabyAge(){var el=document.getElementById("babyAge");if(!el)return;if(!birthDate){el.textContent="Dogum tarihi girilince asi takvimi goruntulenecek ✨";return;}var diffDays=Math.floor((Date.now()-birthDate)/86400000);var months=Math.floor(diffDays/30.44),days=Math.floor(diffDays%30.44);var years=Math.floor(months/12),remainMonths=months%12;var text="";if(years>0)text+=years+" yas ";if(remainMonths>0||years===0)text+=remainMonths+" ay ";if(days>0&&years===0)text+=days+" gun";el.textContent="🎂 "+text+"lik";}
+function getBabyAgeMonths(){if(!birthDate)return null;return Math.floor((Date.now()-birthDate)/(30.44*86400000));}
+
+// ── ASI SISTEMI ──
+var VAX_ALIASES={"hep b":["hepatit b"],"hepb":["hepatit b"],"hbv":["hepatit b"],"bcg":["verem"],"bch":["verem"],"verem":["verem"],"dbt":["dbt-ipa-hib"],"dabt":["dbt-ipa-hib"],"besli":["dbt-ipa-hib"],"5li":["dbt-ipa-hib"],"karma":["dbt-ipa-hib"],"kpa":["pnomokok"],"pnomokok":["pnomokok"],"zaturre":["pnomokok"],"opa":["opa"],"cocuk felci":["opa"],"polio":["opa"],"kkk":["kkk"],"kizamik":["kkk"],"mmr":["kkk"],"sucicegi":["sucicegi"],"varicella":["sucicegi"],"hepatit a":["hepatit a"],"hepa":["hepatit a"]};
+function normalizeVaxName(name){var n=(name||"").toLowerCase().replace(/[^a-z0-9ğüşıöç\-]/g,"").trim();for(var alias in VAX_ALIASES){if(n.includes(alias))return VAX_ALIASES[alias][0];var targets=VAX_ALIASES[alias];for(var t=0;t<targets.length;t++){if(n.includes(targets[t]))return targets[0];}}return n;}
+function normalizeDose(dose){var d=(dose||"").toLowerCase().trim();if(d.includes("1")||d.includes("tek"))return"1. doz";if(d.includes("2"))return"2. doz";if(d.includes("3"))return"3. doz";if(d.includes("rapel")||d.includes("4"))return"rapel";return d;}
+var VACCINE_SCHEDULE=[];
+function matchVaccines(){var babyAgeMonths=getBabyAgeMonths();var customSeries=JSON.parse(localStorage.getItem("bb_custom_vax")||"[]");var fullSchedule=VACCINE_SCHEDULE.slice();for(var s=0;s<customSeries.length;s++){var cs=customSeries[s];for(var d=0;d<cs.doses.length;d++){fullSchedule.push({month:cs.doses[d].month,name:cs.name,dose:cs.doses[d].dose,desc:"Ozel asi serisi",group:"ozel"});}}var schedule=fullSchedule.map(function(sched){var match=null,schedNormal=normalizeVaxName(sched.name);for(var i=0;i<vaccineH.length;i++){var v=vaccineH[i];if(normalizeVaxName(v.name)===schedNormal&&normalizeDose(v.dose)===normalizeDose(sched.dose)){match=v;break;}}if(match)return{name:sched.name,dose:sched.dose,desc:sched.desc,month:sched.month,group:sched.group,status:"done",matched:match,date:match.timestamp};if(babyAgeMonths===null)return{name:sched.name,dose:sched.dose,desc:sched.desc,month:sched.month,group:sched.group,status:"unknown",matched:null};if(babyAgeMonths>=sched.month+1)return{name:sched.name,dose:sched.dose,desc:sched.desc,month:sched.month,group:sched.group,status:"overdue",matched:null};if(babyAgeMonths>=sched.month-1&&babyAgeMonths<sched.month+1)return{name:sched.name,dose:sched.dose,desc:sched.desc,month:sched.month,group:sched.group,status:"upcoming",matched:null};return{name:sched.name,dose:sched.dose,desc:sched.desc,month:sched.month,group:sched.group,status:"future",matched:null};});for(var i=0;i<vaccineH.length;i++){var v=vaccineH[i],vNormal=normalizeVaxName(v.name),found=false;for(var j=0;j<schedule.length;j++){if(vNormal===normalizeVaxName(schedule[j].name)&&normalizeDose(v.dose)===normalizeDose(schedule[j].dose)){found=true;break;}}if(!found){schedule.push({name:v.name,dose:v.dose||"Tek Doz",desc:v.note||"Ozel asi",month:null,group:"ozel",status:"custom",matched:v,date:v.timestamp});}}schedule.sort(function(a,b){if(a.status==="custom"&&b.status!=="custom")return 1;if(b.status==="custom"&&a.status!=="custom")return-1;if(a.month===null)return 1;if(b.month===null)return-1;return a.month-b.month;});return schedule;}
+function quickMarkVaccine(name,dose){vaccineH.unshift({id:uid(),timestamp:Date.now(),name:name,dose:dose,note:""});vaccineH.sort(function(a,b){return b.timestamp-a.timestamp;});if(vaccineH.length>50)vaccineH=vaccineH.slice(0,50);sv("bb_vaccine",vaccineH);syncVaccineReminders();renderVaccineHistory();showToast("💉 "+name+" ("+dose+") — yapildi!","success");}
+function renderVaccineTimeline(){var card=document.getElementById("vaccineScheduleCard"),prog=document.getElementById("vaccineProgress"),tl=document.getElementById("vaccineTimeline");if(!card||!prog||!tl)return;var schedule=matchVaccines(),done=0,overdue=0;for(var i=0;i<schedule.length;i++){if(schedule[i].status==="done")done++;if(schedule[i].status==="overdue")overdue++;}var total=schedule.length;if(!birthDate){card.style.display="block";prog.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:.8rem;">Dogum tarihi girilince asi takvimi goruntulenecek ✨</div>';tl.innerHTML="";return;}card.style.display="block";var pct=Math.round(done/Math.max(total,1)*100);var babyAgeMonths=getBabyAgeMonths(),reminders=[];for(var i=0;i<schedule.length;i++){var s=schedule[i];if(s.status==="upcoming"&&babyAgeMonths!==null&&s.month!==null){var daysUntil=Math.floor((birthDate+s.month*30.44*86400000-Date.now())/86400000);if(daysUntil<=7&&daysUntil>0)reminders.push({name:s.name,dose:s.dose,days:daysUntil});}}prog.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:.7rem;color:var(--text-light);">Tamamlanan</span><span style="font-size:.8rem;font-weight:700;color:var(--green-dark);">'+done+'/'+total+' asi (%'+pct+')</span></div><div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%;background:linear-gradient(90deg,var(--green),var(--green-dark));"></div></div>'+(overdue>0?'<div style="text-align:center;font-size:.78rem;font-weight:700;color:var(--rose-dark);margin-top:5px;">⚠️ '+overdue+' asi gecikmis!</div>':'');if(reminders.length>0){var rh="";for(var i=0;i<reminders.length;i++){var r=reminders[i],label=r.days<=1?"🔔 Yarin!":(r.days<=2?"⚠️ "+r.days+" gun kaldi":"⏰ "+r.days+" gun kaldi");rh+='<div class="vax-reminder">'+label+' — '+r.name+' ('+r.dose+')</div>';}prog.innerHTML+=rh;}var statusLabels={done:"✅ Yapildi",overdue:"⚠️ Gecikti!",upcoming:"⏳ Yakinda",future:"📅 Gelecek",unknown:"❓ Bilinmiyor",custom:"💜 Ozel Asi"};var html='<div class="vtl">';for(var i=0;i<schedule.length;i++){var v=schedule[i],dateStr=v.date?new Date(v.date).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}):"",noteStr=v.matched&&v.matched.note?" — "+v.matched.note:"";var expectedDate="";if(birthDate&&v.month!==null){var expDate=new Date(birthDate+v.month*30.44*86400000);expectedDate=expDate.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"});}var monthLabel=v.month===0?"Dogumda":(v.month!==null?expectedDate:""),clickable=v.status!=="done"&&v.status!=="custom",hint=clickable?' <span style="font-size:.6rem;opacity:.6;">(yapildi isaretle)</span>':"";html+='<div class="vti '+v.status+'" data-vax-idx="'+i+'"><div class="vtname">'+v.name+'</div><div class="vtdose">'+v.dose+'</div><div class="vtstatus">'+statusLabels[v.status]+(dateStr?" · Yapildi: "+dateStr:"")+((v.status!=="done"&&monthLabel)?" · Beklenen: "+monthLabel:"")+hint+noteStr+'</div></div>';}html+="</div>";tl.innerHTML=html;var items=tl.querySelectorAll(".vti");for(var j=0;j<items.length;j++){(function(vti,sched){if(sched.status!=="done"&&sched.status!=="custom"){vti.style.cursor="pointer";vti.addEventListener("click",function(){quickMarkVaccine(sched.name,sched.dose);});}})(items[j],schedule[j]);}}
+function syncVaccineReminders(){if(!birthDate)return;var names=vaccineH.map(function(v){return{name:v.name,dose:v.dose};});try{fetch(window.API_URL+"/api/update-vaccine-reminders",{method:"POST",headers:{"Content-Type":"application/json","X-API-Secret":window.API_SECRET},body:JSON.stringify({birthDate:birthDate,vaccineNames:names})}).catch(function(){});}catch(e){}}
+
+// ── OZEL ASI SERISI ──
+var customVaccineSeries=JSON.parse(localStorage.getItem("bb_custom_vax")||"[]");window.customVaccineSeries=customVaccineSeries;
+var customDoseCount=1;
+function toggleCustomSeries(){var form=document.getElementById("customSeriesForm"),btn=document.getElementById("customSeriesToggle");if(form.style.display==="none"){form.style.display="block";btn.textContent="✕ Kapat";document.getElementById("customVaxName").value="";document.getElementById("cdMonth0").value="";document.getElementById("customSeriesMsg").textContent="";customDoseCount=1;document.getElementById("customDoses").innerHTML='<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><span style="font-size:.72rem;min-width:42px;">1. Doz</span><input class="winp" id="cdMonth0" type="number" placeholder="Ay" min="0" max="72" style="flex:1;padding:6px 10px;font-size:.8rem;"><span style="font-size:.65rem;color:var(--text-light);">. ay</span></div>';}else{form.style.display="none";btn.textContent="+ Ekle";}}
+function addCustomDose(){customDoseCount++;var labels=["","2. Doz","3. Doz","Rapel","Rapel 2"],label=labels[customDoseCount]||(customDoseCount+". Doz");var div=document.createElement("div");div.style.cssText="display:flex;gap:6px;align-items:center;margin-bottom:4px;";div.innerHTML='<span style="font-size:.72rem;min-width:42px;">'+label+'</span><input class="winp" id="cdMonth'+(customDoseCount-1)+'" type="number" placeholder="Ay" min="0" max="72" style="flex:1;padding:6px 10px;font-size:.8rem;"><span style="font-size:.65rem;color:var(--text-light);">. ay</span><button onclick="this.parentElement.remove();customDoseCount--" style="border:none;background:none;color:var(--rose-dark);cursor:pointer;font-size:.9rem;">✕</button>';document.getElementById("customDoses").appendChild(div);}
+function saveCustomVaccineSeries(){var name=document.getElementById("customVaxName").value.trim(),msg=document.getElementById("customSeriesMsg");if(!name){msg.textContent="❌ Asi adi girin";msg.style.color="var(--rose-dark)";return;}var doses=[];for(var i=0;i<customDoseCount;i++){var el=document.getElementById("cdMonth"+i);if(el&&el.value!==""){var month=parseInt(el.value);if(!isNaN(month)&&month>=0){var labels=["1. Doz","2. Doz","3. Doz","Rapel","Rapel 2"];doses.push({dose:labels[i]||(i+1)+". Doz",month:month});}}}if(doses.length===0){msg.textContent="❌ En az bir doz icin ay girin";msg.style.color="var(--rose-dark)";return;}customVaccineSeries.push({name:name,doses:doses,addedAt:Date.now()});localStorage.setItem("bb_custom_vax",JSON.stringify(customVaccineSeries));try{window.FS_setDoc(window.FS_DATA_DOC,{customVax:customVaccineSeries},{merge:true});}catch(e){}msg.textContent="✅ "+name+" eklendi ("+doses.length+" doz)";msg.style.color="var(--green-dark)";toggleCustomSeries();renderVaccineTimeline();showToast("💉 "+name+" takvime eklendi","success");}
+
 function saveVaccine(){
   const name=document.getElementById('vaccineName').value.trim();
   if(!name){alert('Aşı adı girin');return;}
@@ -1402,7 +1431,11 @@ function renderNotes(){
 
 // ── UTILS ──
 function fmt(secs){const m=Math.floor(secs/60),s=secs%60;return`${pad(m)}:${pad(s)}`;}
-function pad(n){return String(n).padStart(2,'0');}
+function pad(n){return String(n).padStart(2,"0");}
+function uid(){return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);}
+function showToast(msg,type){var c=document.getElementById("toastContainer");if(!c){c=document.createElement("div");c.id="toastContainer";c.className="toast-container";document.body.appendChild(c);}var t=document.createElement("div");t.className="toast "+(type||"");t.textContent=msg;c.appendChild(t);setTimeout(function(){t.remove();},3200);}
+function _mergeById(remote,local,maxLen){var map=new Map();remote.forEach(function(e){var key=e.id||(e.timestamp+"_"+(e.type||"")+"_"+(e.startSide||""));map.set(key,e);});local.forEach(function(e){var key=e.id||(e.timestamp+"_"+(e.type||"")+"_"+(e.startSide||""));map.set(key,e);});var merged=Array.from(map.values()).sort(function(a,b){return b.timestamp-a.timestamp;});return maxLen?merged.slice(0,maxLen):merged;}
+window._mergeById=_mergeById;
 
 // ── INIT ──
 initIntervalBtns();restoreSession();updateCountdown();renderFeedHistory();
@@ -1410,6 +1443,8 @@ renderDiaperCd();renderDiaperHistory();renderSleepStatus();renderWeightHistory()
 renderFeverHistory();renderVaccineHistory();renderNotes();
 scheduleAlarm();
 initPWA();
+setTimeout(function(){var lo=document.getElementById("loadingOverlay");if(lo)lo.style.display="none";},1000);
+setTimeout(function(){var box=document.getElementById("notifBanner");if(!box)return;var perm=Notification.permission;if(perm==="granted"){box.className="notif-banner granted";box.textContent="✅ Bildirimler aktif!";}else if(perm==="denied"){box.className="notif-banner denied";box.textContent="❌ Bildirim engellendi.";}else{box.className="notif-banner";box.textContent="🔔 Bildirim izni verilmemis.";}},3000);
 </script>
 </body>
 </html>
