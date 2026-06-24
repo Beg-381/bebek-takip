@@ -32,6 +32,7 @@ function showTab(name){
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.tab')[tabNames.indexOf(name)].classList.add('active');
   document.getElementById('pageTitle').textContent=tabTitles[name];
+  localStorage.setItem('bb_last_tab',name);
   if(name==='analiz')renderAnaliz();
   if(name==='uyku'){renderSleepStatus();renderSleepHistory();}
   if(name==='bez'){renderDiaperCd();renderDiaperHistory();}
@@ -901,6 +902,7 @@ function _mergeById(remote,local,maxLen){var map=new Map();remote.forEach(functi
 window._mergeById=_mergeById;
 
 // ── INIT ──
+var lastTab=localStorage.getItem('bb_last_tab')||'emzirme';showTab(lastTab);
 initIntervalBtns();restoreSession();updateCountdown();renderFeedHistory();
 renderDiaperCd();renderDiaperHistory();renderSleepStatus();renderWeightHistory();
 renderFeverHistory();renderVaccineHistory();renderNotes();

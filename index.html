@@ -12,7 +12,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Varela+Round&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=5">
 
 </head>
 <body>
@@ -31,7 +31,7 @@
     <button class="tab" onclick="showTab('ates')"><span class="ti">🌡️</span>Ateş</button>
     <button class="tab" onclick="showTab('igne')"><span class="ti">💉</span>İğne</button>
     <button class="tab" onclick="showTab('notlar')"><span class="ti">📝</span>Notlar</button>
-    <button class="tab" onclick="showTab('yedek')"><span class="ti">💾</span>Yedek</button>
+    <button class="tab" onclick="showTab('ayarlar')"><span class="ti">⚙️</span>Ayarlar</button>
   </div>
 </div>
 
@@ -348,8 +348,8 @@
 </div>
 
 <!-- YEDEK -->
+<div class="page" id="page-ayarlar">
 <div class="card"><div class="clabel">👶 Bebek Bilgileri</div><div style="margin-bottom:10px;"><div style="font-size:.7rem;color:var(--text-light);margin-bottom:4px;">Dogum Tarihi</div><div style="display:flex;gap:8px;"><input type="date" id="birthDate" class="winp" style="flex:1;padding:8px 12px;"><button class="wsave" onclick="saveBirthDate()" style="padding:8px 16px;white-space:nowrap;">Kaydet</button></div></div><div id="babyAge" style="text-align:center;font-size:.85rem;color:var(--rose-dark);font-weight:700;margin-top:5px;"></div></div>
-<div class="page" id="page-yedek">
   <div class="card">
     <div class="clabel">🔔 Bildirimler</div>
     <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;line-height:1.6;">Uygulama kapalıyken bile emzirme vakti gelince bildirim al! Emzirme kaydettikten sonra otomatik aktif olur.</p>
@@ -379,7 +379,7 @@
 <script type="module" src="firebase.js"></script>
 
 
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 
 </body>
 </html>
