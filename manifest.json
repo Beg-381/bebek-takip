@@ -4,7 +4,7 @@
   "description": "Emzirme, bez, uyku, büyüme ve aşı takibi",
   "categories": ["health", "lifestyle"],
   "lang": "tr",
-  "start_url": "./",
+  "start_url": "./?v=now",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
